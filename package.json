@@ -1,0 +1,9 @@
+{
+  "name": "laser-settings-manager",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@clerk/backend": "latest",
+    "@netlify/blobs": "latest"
+  }
+}
