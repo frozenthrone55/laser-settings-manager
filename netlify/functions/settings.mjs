@@ -11,6 +11,9 @@ const store = getStore({
   consistency: "strong",
 });
 
+// Alleen als lees-fallback. Schrijfacties blijven via de primaire store lopen.
+const eventualStore = getStore("laser-settings");
+
 const AUTHORIZED_PARTIES = [
   "https://laser-settings-manager.netlify.app",
 ];
@@ -59,6 +62,69 @@ async function withBlobRetry(label, operation) {
   }
 
   throw lastError;
+}
+
+
+async function listBlobsResilient(prefix, label) {
+  try {
+    return await withBlobRetry(
+      label,
+      () => store.list({ prefix })
+    );
+  } catch (strongError) {
+    console.warn(
+      `Netlify Blobs strong-consistency mislukt (${label}); probeer eventual-consistency fallback.`,
+      strongError?.message || strongError
+    );
+
+    try {
+      return await withBlobRetry(
+        `${label} eventual fallback`,
+        () => eventualStore.list({ prefix })
+      );
+    } catch (eventualError) {
+      console.error(
+        `Netlify Blobs fallback mislukt (${label}).`,
+        eventualError?.message || eventualError
+      );
+      throw strongError;
+    }
+  }
+}
+
+async function getBlobResilient(key, type = "json") {
+  try {
+    return await withBlobRetry(
+      `get ${key}`,
+      () =>
+        store.get(key, {
+          type,
+          consistency: "strong",
+        })
+    );
+  } catch (strongError) {
+    console.warn(
+      `Netlify Blobs strong-consistency get mislukt (${key}); probeer eventual-consistency fallback.`,
+      strongError?.message || strongError
+    );
+
+    try {
+      return await withBlobRetry(
+        `get ${key} eventual fallback`,
+        () =>
+          eventualStore.get(key, {
+            type,
+            consistency: "eventual",
+          })
+      );
+    } catch (eventualError) {
+      console.error(
+        `Netlify Blobs get fallback mislukt (${key}).`,
+        eventualError?.message || eventualError
+      );
+      throw strongError;
+    }
+  }
 }
 
 const SETTING_FIELDS = [
@@ -265,10 +331,7 @@ async function addHistoryEntry({
 }
 
 async function historyEntries(limit = 300) {
-  const listing = await withBlobRetry(
-    "list history",
-    () => store.list({ prefix: "history/" })
-  );
+  const listing = await listBlobsResilient("history/", "list history");
 
   const selected = listing.blobs
     .slice()
@@ -277,45 +340,20 @@ async function historyEntries(limit = 300) {
 
   return (
     await Promise.all(
-      selected.map((item) =>
-        withBlobRetry(
-          `get ${item.key}`,
-          () =>
-            store.get(item.key, {
-              type: "json",
-              consistency: "strong",
-            })
-        )
-      )
+      selected.map((item) => getBlobResilient(item.key, "json"))
     )
   ).filter(Boolean);
 }
 
 async function loadCentralPatch(user) {
-  // Bewust sequentieel + retry: een tijdelijke fout in één Blob-list mag
-  // de volledige centrale database niet meteen onbereikbaar maken.
-  const upsertIndex = await withBlobRetry(
-    "list upserts",
-    () => store.list({ prefix: "upserts/" })
-  );
-
-  const deletedIndex = await withBlobRetry(
-    "list deleted",
-    () => store.list({ prefix: "deleted/" })
-  );
+  // Primair: strong consistency. Bij een tijdelijke Netlify-originfout
+  // schakelen de leesoperaties automatisch over naar eventual consistency.
+  const upsertIndex = await listBlobsResilient("upserts/", "list upserts");
+  const deletedIndex = await listBlobsResilient("deleted/", "list deleted");
 
   const upsertsRaw = (
     await Promise.all(
-      upsertIndex.blobs.map((entry) =>
-        withBlobRetry(
-          `get ${entry.key}`,
-          () =>
-            store.get(entry.key, {
-              type: "json",
-              consistency: "strong",
-            })
-        )
-      )
+      upsertIndex.blobs.map((entry) => getBlobResilient(entry.key, "json"))
     )
   ).filter(Boolean);
 
@@ -709,11 +747,11 @@ async function restoreHistory(historyId, user) {
     return json({ success: false, error: "Alleen een Beheerder kan wijzigingen herstellen." }, 403);
   }
 
-  const listing = await withBlobRetry("list history for restore", () => store.list({ prefix: "history/" }));
+  const listing = await listBlobsResilient("history/", "list history for restore");
   const match = listing.blobs.find((item) => item.key.endsWith(historyId));
   if (!match) return json({ success: false, error: "Geschiedenisitem niet gevonden." }, 404);
 
-  const entry = await withBlobRetry(`get ${match.key}`, () => store.get(match.key, { type: "json", consistency: "strong" }));
+  const entry = await getBlobResilient(match.key, "json");
   if (!entry?.restorable) {
     return json({ success: false, error: "Deze actie kan niet worden hersteld." }, 400);
   }
@@ -787,7 +825,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 5,
+        version: 6,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         pendingCount: patch.pendingCount,
