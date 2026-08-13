@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="nl"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1220">
 <meta name="app-instance" content="lsm70-msql1f0n-mufa8n">
 <meta name="clerk-publishable-key" content="pk_test_Y3J1Y2lhbC13aWxkY2F0LTExLmNsZXJrLmFjY291bnRzLmRldiQ">
@@ -35,6 +35,188 @@
 @media(max-width:1250px){.grid4{grid-template-columns:repeat(2,1fr)}.materialGrid{grid-template-columns:repeat(3,1fr)}.filterGrid{grid-template-columns:1.5fr repeat(3,1fr)}.filterActions{grid-column:1/-1}.dashboardGrid,.testLayout{grid-template-columns:1fr}.testMatrix{grid-template-columns:repeat(5,1fr)}}
 @media(max-width:850px){.app{grid-template-columns:1fr}.sidebar{position:fixed;left:-270px;width:250px;transition:.2s left;box-shadow:20px 0 50px #0003}.sidebar.open{left:0}.mobileMenu{display:grid}.topbar{padding:0 14px}.topSearch{width:auto;flex:1}.kbd{display:none}.content{padding:18px 14px 40px}.materialGrid{grid-template-columns:repeat(2,1fr)}.adminGrid,.detailGrid{grid-template-columns:1fr}.formGrid{grid-template-columns:1fr 1fr}.span3{grid-column:1/-1}.bigParams{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.syncBadge .syncText{display:none}.syncBadge{padding:8px;min-width:34px;justify-content:center}.grid4,.materialGrid,.quickGrid{grid-template-columns:1fr}.filterGrid,.formGrid{grid-template-columns:1fr}.span2,.span3{grid-column:auto}.viewHead,.tableTop{flex-direction:column;align-items:stretch}.topSearch{display:none}.testMatrix{grid-template-columns:repeat(2,1fr)}.pagination{flex-direction:column}.toolbar .btn{flex:1}.modalFoot{flex-wrap:wrap}.modalFoot .btn{flex:1}}
+
+/* v1.4.0 — mobiel en touch-vriendelijk */
+html,body{max-width:100%;overflow-x:hidden}
+button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
+.tablewrap{overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}
+
+/* Clerk krijgt altijd de beschikbare breedte van de login-kaart. */
+#clerkSignInMount,.clerkMount,#clerkSignInMount>*,.clerkMount>*{width:100%;max-width:100%;min-width:0}
+.clerkGateCard{max-width:100%;overflow:hidden}
+.clerkGate{min-height:100vh;min-height:100dvh}
+
+/* Mobiele sidebar: veilige zones rond notch/home-indicator. */
+@media(max-width:850px){
+  .sidebar{
+    height:100vh;height:100dvh;
+    padding-top:max(16px,env(safe-area-inset-top));
+    padding-bottom:max(14px,env(safe-area-inset-bottom));
+  }
+  .topbar{
+    min-height:64px;height:auto;
+    padding-top:max(0px,env(safe-area-inset-top));
+  }
+  .content{width:100%;min-width:0}
+  .card,.tableCard,.filterCard{max-width:100%}
+  .tablewrap{width:100%;max-width:100%}
+}
+
+/* Telefoon */
+@media(max-width:600px){
+  body{font-size:14px}
+
+  /* LOGIN — geen uitzoomen meer nodig */
+  .clerkGate{
+    display:block;
+    overflow-y:auto;
+    padding:
+      max(12px,env(safe-area-inset-top))
+      max(10px,env(safe-area-inset-right))
+      max(18px,env(safe-area-inset-bottom))
+      max(10px,env(safe-area-inset-left));
+  }
+  .clerkGateCard{
+    width:100%;
+    max-width:440px;
+    min-width:0;
+    margin:0 auto;
+    border-radius:16px;
+    padding:16px 12px;
+    box-shadow:0 18px 55px #0005;
+  }
+  .loginBrand{
+    gap:10px;
+    margin:0 4px 14px;
+    align-items:center;
+  }
+  .loginBrand .brandmark{
+    width:40px;height:40px;border-radius:11px;
+  }
+  .loginBrand .brandmark svg{width:24px;height:24px}
+  .clerkGateCard h1{font-size:18px;line-height:1.2}
+  .clerkGateCard p{font-size:12px}
+  .clerkMount{min-height:90px}
+  #clerkSignInPane .safety{
+    margin:0 0 10px;
+    padding:9px 10px;
+    font-size:11px;
+    line-height:1.4;
+  }
+  .clerkSetupActions{display:grid;grid-template-columns:1fr}
+  .clerkSetupActions .btn{width:100%;min-height:44px}
+
+  /* iOS zoomt niet automatisch in op invoervelden van 16px of groter. */
+  .clerkGate input,
+  .clerkGate select,
+  .clerkGate textarea,
+  .field input,
+  .field select,
+  .field textarea{
+    font-size:16px;
+  }
+
+  /* App-navigatie */
+  .topbar{
+    gap:8px;
+    padding-left:max(10px,env(safe-area-inset-left));
+    padding-right:max(10px,env(safe-area-inset-right));
+  }
+  .mobileMenu{min-width:42px;min-height:42px}
+  .pageTitle{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #clerkUserButton{min-width:36px}
+  .content{
+    padding:
+      14px max(10px,env(safe-area-inset-right))
+      max(32px,env(safe-area-inset-bottom))
+      max(10px,env(safe-area-inset-left));
+  }
+
+  /* Koppen en acties */
+  .viewHead{gap:10px;margin-bottom:12px}
+  .viewHead h1{font-size:21px}
+  .card,.filterCard{padding:13px;border-radius:13px}
+  .cardHead{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:9px;
+  }
+  .cardHead>.toolbar{width:100%}
+  .cardHead>.toolbar .btn{flex:1;min-height:42px}
+  .toolbar{width:100%}
+  .toolbar .btn{min-height:42px}
+
+  /* Formulieren */
+  .field label{font-size:10px}
+  .field input,.field select,.field textarea{min-height:44px;padding:10px}
+  .filterActions{display:grid;grid-template-columns:1fr 1fr}
+  .filterActions .btn{min-height:44px}
+
+  /* Dashboard */
+  .metric{padding:14px}
+  .metricValue{font-size:25px}
+  .dashboardGrid{gap:12px;margin-top:12px}
+  .healthGrid,.userStatsGrid{gap:9px}
+  .healthItem,.userStatCard{padding:11px}
+
+  /* Tabellen blijven horizontaal schuifbaar i.p.v. de hele pagina breed te maken. */
+  .tableCard{border-radius:13px}
+  .tableTop{padding:12px}
+  .dataTable{min-width:920px}
+  .userTable{min-width:720px}
+  .tablewrap{max-height:70vh}
+  .dataTable th,.dataTable td{padding:8px 9px}
+  .pagination{padding:10px 12px}
+
+  /* Goedkeuringswachtrij */
+  .approvalItem{align-items:stretch;flex-direction:column}
+  .approvalItem>.toolbar{display:grid;grid-template-columns:repeat(3,1fr)}
+  .approvalItem>.toolbar .btn{width:100%}
+
+  /* Geschiedenis */
+  .historyFilters{grid-template-columns:1fr}
+  .historyCount{white-space:normal}
+  .audit{padding-left:9px}
+
+  /* Modals volledig bruikbaar op telefoon */
+  .modalBackdrop{
+    align-items:end;
+    padding:0;
+  }
+  .modal,.modal.sm,.modal.lg{
+    width:100%;
+    max-width:none;
+    max-height:94vh;
+    max-height:94dvh;
+    border-radius:18px 18px 0 0;
+  }
+  .modalHead{padding:13px 14px}
+  .modalBody{padding:14px}
+  .modalFoot{
+    padding:
+      11px 14px max(11px,env(safe-area-inset-bottom));
+  }
+  .bigParams{grid-template-columns:1fr 1fr}
+  .detailHero h3{font-size:19px}
+  .metaLine{flex-direction:column;gap:1px}
+
+  /* Systeemstatus/back-up: knoppen breed genoeg voor touch. */
+  #centralBackupBtn,#copySystemReportBtn{min-height:42px}
+}
+
+/* Zeer smalle telefoons */
+@media(max-width:390px){
+  .clerkGate{padding-left:6px;padding-right:6px}
+  .clerkGateCard{padding:14px 8px;border-radius:14px}
+  .loginBrand{margin-left:6px;margin-right:6px}
+  .loginBrand .brandmark{width:36px;height:36px}
+  .clerkGateCard h1{font-size:17px}
+  .content{padding-left:8px;padding-right:8px}
+  .filterActions{grid-template-columns:1fr}
+  .approvalItem>.toolbar{grid-template-columns:1fr}
+  .bigParams{grid-template-columns:1fr}
+}
+
 @media print{.sidebar,.topbar,.filterCard,.toolbar,.pagination,.actions,.star{display:none!important}.app{display:block}.content{padding:0}.view{display:none!important}#view-settings{display:block!important}.tablewrap{max-height:none;overflow:visible}.tableCard{border:0;box-shadow:none}.dataTable th{position:static}}
 </style>
 </head>
@@ -104,7 +286,7 @@
 
 <script>
 'use strict';
-const APP_VERSION='1.3.1';
+const APP_VERSION='1.4.0';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -391,7 +573,7 @@ async function syncClerkUser(){
 }
 function mountClerkUserButton(){if(!window.Clerk?.user||clerkUserButtonMounted)return;const node=$('clerkUserButton');if(!node)return;try{Clerk.mountUserButton(node,{appearance:{variables:{colorPrimary:'#2268d8'}}});clerkUserButtonMounted=true}catch(e){console.warn(e)}}
 function mountClerkOrganizationProfile(){const node=$('clerkOrgProfile'),status=$('clerkOrgStatus');if(!node||!window.Clerk?.user)return;if(!clerkMembership){if(status){status.className='safety ok';status.innerHTML='<strong>Zelfregistratie is actief.</strong> Nieuwe gebruikers maken zelf een account via de login en krijgen automatisch de rol <strong>Bijdrager</strong>. Een Clerk Organization is alleen nodig als je daarnaast handmatige uitnodigingen per e-mail wilt beheren.'}node.innerHTML='';return}if(status){status.className='safety ok';status.innerHTML=`<strong>${esc(clerkMembership.organization?.name||'Organisatie')}</strong> · jouw rol: ${clerkMembership.role==='org:admin'?'Admin':'Member'}. Zelfregistratie blijft toegestaan; Organization-uitnodigingen zijn aanvullend.`}if(clerkOrgMounted)return;try{Clerk.mountOrganizationProfile(node,{routing:'hash',appearance:{variables:{colorPrimary:'#2268d8',borderRadius:'0.75rem'}}});clerkOrgMounted=true}catch(e){status.className='safety danger';status.textContent='Clerk gebruikersbeheer kon niet worden geladen: '+e.message}}
-async function initClerkAuth(){const key=getClerkKey();$('loginScreen').classList.remove('hidden');if(!key){showClerkPane('clerkSetupPane');$('clerkGateSubtitle').textContent='Eenmalige Clerk-koppeling';return}showClerkPane('clerkLoadingPane');try{const domain=clerkKeyDomain(key);if(!domain)throw new Error('De Publishable Key lijkt ongeldig.');$('clerkLoadingText').textContent='Clerk-beveiliging laden…';await loadExternal(`https://${domain}/npm/@clerk/ui@1/dist/ui.browser.js`);await loadExternal(`https://${domain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`,{'data-clerk-publishable-key':key});if(!window.Clerk)throw new Error('ClerkJS werd niet geïnitialiseerd.');await Clerk.load({ui:{ClerkUI:window.__internal_ClerkUICtor},afterSignOutUrl:window.location.href});clerkInitialized=true;if(Clerk.user){await syncClerkUser()}else{showClerkPane('clerkSignInPane');$('clerkGateSubtitle').textContent='Meld je aan of maak zelf een account aan';Clerk.mountSignIn($('clerkSignInMount'),{appearance:{variables:{colorPrimary:'#2268d8',borderRadius:'0.75rem'}}})}Clerk.addListener(async({user})=>{if(user){await syncClerkUser()}else{stopCentralSync();centralMode=false;centralPatch={upserts:[],deleted:[]};centralSignature='';centralHistory=[];centralRecentHistory=[];centralUsers=[];centralUserStats=[];centralPendingCount=0;centralApiVersion='';pendingBaseline=null;setSyncStatus('offline','Niet aangemeld');rebuildRows();renderAll();$('loginScreen').classList.remove('hidden');showClerkPane('clerkSignInPane');if($('clerkSignInMount')&&!$('clerkSignInMount').children.length)Clerk.mountSignIn($('clerkSignInMount'))}})}catch(e){console.error(e);showClerkPane('clerkErrorPane');$('clerkErrorText').textContent=e.message||String(e)}}
+async function initClerkAuth(){const key=getClerkKey();$('loginScreen').classList.remove('hidden');if(!key){showClerkPane('clerkSetupPane');$('clerkGateSubtitle').textContent='Eenmalige Clerk-koppeling';return}showClerkPane('clerkLoadingPane');try{const domain=clerkKeyDomain(key);if(!domain)throw new Error('De Publishable Key lijkt ongeldig.');$('clerkLoadingText').textContent='Clerk-beveiliging laden…';await loadExternal(`https://${domain}/npm/@clerk/ui@1/dist/ui.browser.js`);await loadExternal(`https://${domain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`,{'data-clerk-publishable-key':key});if(!window.Clerk)throw new Error('ClerkJS werd niet geïnitialiseerd.');await Clerk.load({ui:{ClerkUI:window.__internal_ClerkUICtor},afterSignOutUrl:window.location.href});clerkInitialized=true;if(Clerk.user){await syncClerkUser()}else{showClerkPane('clerkSignInPane');$('clerkGateSubtitle').textContent='Meld je aan of maak zelf een account aan';Clerk.mountSignIn($('clerkSignInMount'),{appearance:{variables:{colorPrimary:'#2268d8',borderRadius:'0.75rem'},options:{elevation:'flush',autoFocus:false},elements:{rootBox:{width:'100%',maxWidth:'100%'},cardBox:{width:'100%',maxWidth:'100%',boxShadow:'none'},card:{width:'100%',maxWidth:'100%',boxShadow:'none'},formFieldInput:{fontSize:'16px'},formButtonPrimary:{minHeight:'44px'}}}})}Clerk.addListener(async({user})=>{if(user){await syncClerkUser()}else{stopCentralSync();centralMode=false;centralPatch={upserts:[],deleted:[]};centralSignature='';centralHistory=[];centralRecentHistory=[];centralUsers=[];centralUserStats=[];centralPendingCount=0;centralApiVersion='';pendingBaseline=null;setSyncStatus('offline','Niet aangemeld');rebuildRows();renderAll();$('loginScreen').classList.remove('hidden');showClerkPane('clerkSignInPane');if($('clerkSignInMount')&&!$('clerkSignInMount').children.length)Clerk.mountSignIn($('clerkSignInMount'),{appearance:{variables:{colorPrimary:'#2268d8',borderRadius:'0.75rem'},options:{elevation:'flush',autoFocus:false},elements:{rootBox:{width:'100%',maxWidth:'100%'},cardBox:{width:'100%',maxWidth:'100%',boxShadow:'none'},card:{width:'100%',maxWidth:'100%',boxShadow:'none'},formFieldInput:{fontSize:'16px'},formButtonPrimary:{minHeight:'44px'}}}})}})}catch(e){console.error(e);showClerkPane('clerkErrorPane');$('clerkErrorText').textContent=e.message||String(e)}}
 async function logout(){stopCentralSync();if(window.Clerk?.user){await Clerk.signOut({redirectUrl:window.location.href});return}$('loginScreen').classList.remove('hidden');showClerkPane('clerkSignInPane')}
 function exportCsv(){const heads=['Materiaal','Bewerking','Dikte (mm)','Vermogen (%)','Effectief vermogen (W)','Snelheid (mm/min)','Aantal passes','Air Assist','Status','Bron','Betrouwbaarheid','Getest','Machine','Opmerking','Toegevoegd door','Toegevoegd e-mail','Toegevoegd op','Laatst gewijzigd door','Gewijzigd op'];const vals=rows.slice().sort(sortRows).map(r=>[r.materiaal,r.bewerking,r.dikte,r.vermogen,r.effectief,r.snelheid,r.passes,r.airAssist,statusOf(r),r.source,r.reliability,r.tested?'Ja':'Nee',r.machine,r.opmerking,r.createdByName,r.createdByEmail,r.createdAt,r.updatedByName,r.updatedAt]);const q=v=>'"'+txt(v).replaceAll('"','""')+'"';download('laser-settings-70W.csv','text/csv;charset=utf-8','\ufeff'+[heads,...vals].map(a=>a.map(q).join(';')).join('\r\n'))}
 function download(name,type,content){const a=document.createElement('a');const url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
