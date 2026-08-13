@@ -37,8 +37,13 @@ function json(data, status = 200) {
     status,
     headers: {
       "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
+}
+
+function shortText(value, max) {
+  return String(value ?? "").trim().slice(0, max);
 }
 
 function cleanSetting(input = {}) {
@@ -50,13 +55,14 @@ function cleanSetting(input = {}) {
     }
   }
 
-  result.materiaal = String(result.materiaal || "").trim();
-  result.bewerking = String(result.bewerking || "").trim();
-  result.airAssist = String(result.airAssist || "").trim();
-  result.opmerking = String(result.opmerking || "").trim();
-  result.source = String(result.source || "Eigen instelling").trim();
-  result.reliability = String(result.reliability || "Gemiddeld").trim();
-  result.machine = String(result.machine || "70 W diode-laser").trim();
+  result.materiaal = shortText(result.materiaal, 120);
+  result.bewerking = shortText(result.bewerking, 20);
+  result.airAssist = shortText(result.airAssist, 180);
+  result.opmerking = shortText(result.opmerking, 2500);
+  result.source = shortText(result.source || "Eigen instelling", 120);
+  result.reliability = shortText(result.reliability || "Gemiddeld", 50);
+  result.machine = shortText(result.machine || "70 W diode-laser", 120);
+  result.testedAt = shortText(result.testedAt, 60);
   result.tested = Boolean(result.tested);
 
   return result;
@@ -71,48 +77,32 @@ function validateSetting(setting) {
     return "Ongeldige bewerking.";
   }
 
-  if (
-    setting.vermogen === "" ||
-    setting.vermogen === null ||
-    setting.vermogen === undefined ||
-    !Number.isFinite(Number(setting.vermogen)) ||
-    Number(setting.vermogen) < 0 ||
-    Number(setting.vermogen) > 100
-  ) {
+  const power = Number(setting.vermogen);
+  if (!Number.isFinite(power) || power < 0 || power > 100) {
     return "Vermogen moet tussen 0 en 100% liggen.";
   }
 
-  if (
-    setting.bewerking === "Snijden" &&
-    (
-      setting.dikte === "" ||
-      setting.dikte === null ||
-      setting.dikte === undefined ||
-      !Number.isFinite(Number(setting.dikte))
-    )
-  ) {
-    return "Dikte is verplicht bij snijden.";
+  if (setting.bewerking === "Snijden") {
+    const thickness = Number(setting.dikte);
+    if (!Number.isFinite(thickness) || thickness < 0 || thickness > 1000) {
+      return "Dikte is verplicht bij snijden en moet een geldige waarde zijn.";
+    }
   }
 
-  if (
-    setting.bewerking === "Graveren" &&
-    (
-      setting.snelheid === "" ||
-      setting.snelheid === null ||
-      setting.snelheid === undefined ||
-      !Number.isFinite(Number(setting.snelheid))
-    )
-  ) {
+  if (setting.snelheid !== "" && setting.snelheid !== null && setting.snelheid !== undefined) {
+    const speed = Number(setting.snelheid);
+    if (!Number.isFinite(speed) || speed < 0 || speed > 1000000) {
+      return "Snelheid is ongeldig.";
+    }
+  } else if (setting.bewerking === "Graveren") {
     return "Snelheid is verplicht bij graveren.";
   }
 
-  if (
-    setting.snelheid !== "" &&
-    setting.snelheid !== null &&
-    setting.snelheid !== undefined &&
-    Number(setting.snelheid) < 0
-  ) {
-    return "Snelheid kan niet negatief zijn.";
+  if (setting.passes !== "" && setting.passes !== null && setting.passes !== undefined) {
+    const passes = Number(setting.passes);
+    if (!Number.isFinite(passes) || passes < 1 || passes > 1000) {
+      return "Aantal passes is ongeldig.";
+    }
   }
 
   return "";
@@ -123,6 +113,17 @@ function validId(id) {
     typeof id === "string" &&
     /^[A-Za-z0-9._:-]{1,180}$/.test(id)
   );
+}
+
+function rowForUser(row, user) {
+  if (!row || user.role === "admin") {
+    return row;
+  }
+
+  const safe = { ...row };
+  delete safe.createdByEmail;
+  delete safe.updatedByEmail;
+  return safe;
 }
 
 async function authenticatedUser(request) {
@@ -173,7 +174,7 @@ async function authenticatedUser(request) {
   };
 }
 
-async function loadCentralPatch() {
+async function loadCentralPatch(user) {
   const [upsertIndex, deletedIndex] = await Promise.all([
     store.list({ prefix: "upserts/" }),
     store.list({ prefix: "deleted/" }),
@@ -188,7 +189,9 @@ async function loadCentralPatch() {
         })
       )
     )
-  ).filter(Boolean);
+  )
+    .filter(Boolean)
+    .map((row) => rowForUser(row, user));
 
   const deleted = deletedIndex.blobs.map((entry) =>
     entry.key.slice("deleted/".length)
@@ -234,7 +237,7 @@ async function addSetting(request, user) {
   return json({
     success: true,
     action: "add",
-    row,
+    row: rowForUser(row, user),
   });
 }
 
@@ -317,7 +320,7 @@ async function deleteSettings(request, user) {
     ids = [body.id];
   }
 
-  ids = [...new Set(ids)].filter(validId);
+  ids = [...new Set(ids)].filter(validId).slice(0, 100);
 
   if (!ids.length) {
     return json(
@@ -333,8 +336,9 @@ async function deleteSettings(request, user) {
 
   await Promise.all(
     ids.map(async (id) => {
-      await store.delete(`upserts/${id}`);
-
+      // Bewaar een bestaande upsert zodat een herstelactie de oorspronkelijke
+      // auteur- en aanmaakmetadata kan behouden. De deleted-marker bepaalt
+      // of de rij zichtbaar is.
       await store.setJSON(`deleted/${id}`, {
         id,
         deletedAt,
@@ -367,11 +371,11 @@ export default async (request) => {
     }
 
     if (request.method === "GET") {
-      const patch = await loadCentralPatch();
+      const patch = await loadCentralPatch(user);
 
       return json({
         success: true,
-        version: 1,
+        version: 2,
         user: {
           id: user.id,
           name: user.name,
