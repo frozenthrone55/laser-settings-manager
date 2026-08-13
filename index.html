@@ -104,7 +104,7 @@
 
 <script>
 'use strict';
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.3.1';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -175,6 +175,12 @@ function notifyCentralChanges(oldPatch,nextPatch,newPendingCount){
 function renderUserStats(){const render=node=>{if(!node)return;node.innerHTML=centralUserStats.length?centralUserStats.map(s=>`<div class="userStatCard"><h3>${esc(s.name)}</h3><div class="statEmail">${esc(s.email||'—')}</div><div style="margin-top:7px"><span class="pill ${s.role==='admin'?'purple':'blue'}">${ROLE_NAMES[s.role]||s.role}</span></div><div class="userStatNumbers"><div><strong>${Number(s.activeAdded)||0}</strong><span>Actief</span></div><div><strong>${Number(s.approved)||0}</strong><span>Goedgekeurd</span></div><div><strong>${Number(s.pending)||0}</strong><span>Wachtend</span></div><div><strong>${Number(s.edits)||0}</strong><span>Wijzigingen</span></div><div><strong>${Number(s.approvals)||0}</strong><span>Goedkeuringen</span></div><div><strong>${Number(s.rejections)||0}</strong><span>Afwijzingen</span></div></div><div style="font-size:10px;color:var(--muted);margin-top:8px">Laatste activiteit: ${s.lastActivityAt?fmtDate(s.lastActivityAt):'—'}</div></div>`).join(''):'<div class="empty">Nog geen gebruikersactiviteit.</div>'};render($('dashboardUserStats'));render($('userStatsGrid'))}
 function exportCentralHistoryCsv(){if(!can('admin')||!centralHistory.length)return toast('Geen centrale geschiedenis om te exporteren.','bad');const heads=['Datum','Type','Actie','Gebruiker','Gebruikers-ID','Rol','Instelling-ID','Herstelbaar'];const vals=centralHistory.map(h=>[h.at,h.type,h.label,h.user,h.userId,h.userRole||'',h.rowId||'',h.restorable?'Ja':'Nee']);const q=v=>'"'+txt(v).replaceAll('"','""')+'"';download('laser-settings-wijzigingsgeschiedenis.csv','text/csv;charset=utf-8','\ufeff'+[heads,...vals].map(a=>a.map(q).join(';')).join('\r\n'))}
 function centralBackupStamp(){return localStorage.getItem('lsm_last_central_backup')||''}
+function localDateStamp(date=new Date()){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,'0');
+  const d=String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
 function renderSystemHealth(){
   const set=(id,v)=>{const el=$(id);if(el)el.textContent=v};
   set('healthApi',centralApiVersion?`v${centralApiVersion}`:'—');
@@ -230,7 +236,7 @@ async function exportCentralBackup(){
     },
     note:'Clerk-wachtwoorden, sessietokens en geheime sleutels zijn niet opgenomen.'
   };
-  download(`laser-settings-central-backup-${exportedAt.slice(0,10)}.json`,'application/json',JSON.stringify(payload,null,2));
+  download(`laser-settings-central-backup-${localDateStamp()}.json`,'application/json',JSON.stringify(payload,null,2));
   localStorage.setItem('lsm_last_central_backup',exportedAt);
   renderSystemHealth();
   toast('Centrale database-back-up aangemaakt','good');
