@@ -15,6 +15,24 @@ const AUTHORIZED_PARTIES = [
   "https://laser-settings-manager.netlify.app",
 ];
 
+const MAX_JSON_BODY_BYTES = 64 * 1024;
+
+function requestSourceAllowed(request) {
+  const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+
+  if (origin && !AUTHORIZED_PARTIES.includes(origin)) return false;
+  if (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite)) return false;
+  return true;
+}
+
+function requestBodyAllowed(request) {
+  const raw = request.headers.get("content-length");
+  if (!raw) return true;
+  const length = Number(raw);
+  return Number.isFinite(length) && length >= 0 && length <= MAX_JSON_BODY_BYTES;
+}
+
 const BLOB_RETRY_DELAYS = [0, 250, 600, 1200];
 
 function wait(ms) {
@@ -323,7 +341,61 @@ async function loadCentralPatch(user) {
       (user.role === "admin" || row.createdById === user.id)
   ).length;
 
-  return { upserts, deleted, pendingCount };
+  return { upserts, deleted, pendingCount, rawUpserts: upsertsRaw };
+}
+
+
+function buildUserStats(users, rawRows, deletedIds, history) {
+  const deleted = new Set(deletedIds || []);
+  const stats = new Map();
+
+  for (const account of users || []) {
+    stats.set(account.id, {
+      userId: account.id,
+      name: account.name,
+      email: account.email,
+      role: account.role,
+      activeAdded: 0,
+      approved: 0,
+      pending: 0,
+      edits: 0,
+      approvals: 0,
+      rejections: 0,
+      lastActivityAt: null,
+    });
+  }
+
+  for (const raw of rawRows || []) {
+    const row = storedRow(raw);
+    if (!row?.createdById || deleted.has(row.id)) continue;
+    const item = stats.get(row.createdById);
+    if (!item) continue;
+    item.activeAdded += 1;
+    if (row.approvalStatus === "pending") item.pending += 1;
+    else item.approved += 1;
+  }
+
+  for (const entry of history || []) {
+    const item = stats.get(entry.userId);
+    if (!item) continue;
+    if (entry.type === "edit") item.edits += 1;
+    if (entry.type === "approve") item.approvals += 1;
+    if (entry.type === "reject") item.rejections += 1;
+
+    if (
+      entry.at &&
+      (!item.lastActivityAt ||
+        new Date(entry.at).getTime() > new Date(item.lastActivityAt).getTime())
+    ) {
+      item.lastActivityAt = entry.at;
+    }
+  }
+
+  return [...stats.values()].sort((a, b) => {
+    const aTime = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+    const bTime = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+    return bTime - aTime || a.name.localeCompare(b.name, "nl");
+  });
 }
 
 async function listUsersForAdmin(user) {
@@ -694,6 +766,16 @@ async function handlePatch(request, user) {
 
 export default async (request) => {
   try {
+    const mutating = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
+
+    if (mutating && !requestSourceAllowed(request)) {
+      return json({ success: false, error: "Aanvraagbron niet toegestaan." }, 403);
+    }
+
+    if (mutating && !requestBodyAllowed(request)) {
+      return json({ success: false, error: "Aanvraag is te groot." }, 413);
+    }
+
     const user = await authenticatedUser(request);
     if (!user) return json({ success: false, error: "Niet aangemeld." }, 401);
 
@@ -705,7 +787,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 4,
+        version: 5,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         pendingCount: patch.pendingCount,
@@ -720,6 +802,12 @@ export default async (request) => {
         result.history = history;
         result.users = userData.users;
         result.userCount = userData.totalCount;
+        result.userStats = buildUserStats(
+          userData.users,
+          patch.rawUpserts,
+          patch.deleted,
+          history
+        );
       }
 
       return json(result);
