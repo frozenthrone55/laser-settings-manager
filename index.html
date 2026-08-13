@@ -89,13 +89,13 @@
 
 <script>
 'use strict';
-const APP_VERSION='5.6-central-auth-fix';
+const APP_VERSION='5.7-central-sync-stable';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
 const PORTABLE_STATE=JSON.parse(document.getElementById('portable-state').textContent||'{}');
 const ROLE_NAMES={admin:'Beheerder',contributor:'Bijdrager',editor:'Editor',viewer:'Kijker'};
-const CLERK_KEY_STORAGE='laser-clerk-publishable-key';let clerkMembership=null;let clerkInitialized=false;let clerkOrgMounted=false;let clerkUserButtonMounted=false;
+const CLERK_KEY_STORAGE='laser-clerk-publishable-key';let clerkMembership=null;let clerkInitialized=false;let clerkOrgMounted=false;let clerkUserButtonMounted=false;let clerkSyncBusy=false;
 const CENTRAL_API='/api/settings';
 const CENTRAL_REQUIRED=location.hostname==='laser-settings-manager.netlify.app';
 let centralMode=false;let centralPatch={upserts:[],deleted:[]};let centralSignature='';let centralSyncTimer=null;let centralSyncBusy=false;
@@ -214,7 +214,64 @@ function showClerkPane(name){['clerkSetupPane','clerkLoadingPane','clerkSignInPa
 function clerkKeyDomain(key){try{const part=key.split('_')[2];if(!part)return '';return atob(part).slice(0,-1)}catch{return ''}}
 function loadExternal(src,attrs={}){return new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src=src;sc.defer=true;sc.crossOrigin='anonymous';Object.entries(attrs).forEach(([k,v])=>sc.setAttribute(k,v));sc.onload=resolve;sc.onerror=()=>reject(new Error('Script kon niet worden geladen: '+src));document.head.appendChild(sc)})}
 async function ensureActiveClerkOrganization(){if(!window.Clerk?.user)return null;let memberships=[];try{const response=await Clerk.user.getOrganizationMemberships({pageSize:50});memberships=response?.data||[]}catch(e){console.warn('Clerk memberships',e)}if(!memberships.length){clerkMembership=null;return null}let selected=memberships.find(m=>Clerk.organization&&m.organization.id===Clerk.organization.id)||memberships[0];if(!Clerk.organization&&selected?.organization?.id){try{await Clerk.setActive({organization:selected.organization.id})}catch(e){console.warn('Clerk setActive',e)}}clerkMembership=selected;return selected}
-async function syncClerkUser(){const u=window.Clerk?.user;if(!u)return false;try{if(typeof u.reload==='function')await u.reload()}catch(e){console.warn('Clerk user reload',e)}const membership=await ensureActiveClerkOrganization();const email=u.primaryEmailAddress?.emailAddress||u.emailAddresses?.[0]?.emailAddress||'';const name=u.fullName||[u.firstName,u.lastName].filter(Boolean).join(' ')||email||'Gebruiker';const crole=membership?.role||'';const metadataRole=txt(u.publicMetadata?.role).trim().toLowerCase();const isAdmin=crole==='org:admin'||metadataRole==='admin'||metadataRole==='beheerder';currentUser={id:u.id,username:name,email,role:isAdmin?'admin':'contributor',clerkRole:crole||'self'};const firstConnection=!centralMode;const connected=await refreshCentralSettings({silent:true,force:true});if(connected){startCentralSync();if(firstConnection)toast('Centrale database verbonden')}else if(CENTRAL_REQUIRED)toast('Centrale database niet bereikbaar. Wijzigingen zijn tijdelijk geblokkeerd.','bad');$('loginScreen').classList.add('hidden');applyRoleUI();renderAll();mountClerkUserButton();console.info('Clerk rolcontrole',{metadataRole,crole,appRole:currentUser.role,centralMode});return true}
+async function syncClerkUser(){
+  if(clerkSyncBusy)return true;
+  const u=window.Clerk?.user;
+  if(!u)return false;
+  clerkSyncBusy=true;
+  try{
+    try{
+      if(typeof u.reload==='function')await u.reload();
+    }catch(e){
+      console.warn('Clerk user reload',e);
+    }
+
+    const membership=await ensureActiveClerkOrganization();
+    const email=u.primaryEmailAddress?.emailAddress||u.emailAddresses?.[0]?.emailAddress||'';
+    const name=u.fullName||[u.firstName,u.lastName].filter(Boolean).join(' ')||email||'Gebruiker';
+    const crole=membership?.role||'';
+    const metadataRole=txt(u.publicMetadata?.role).trim().toLowerCase();
+    const isAdmin=crole==='org:admin'||metadataRole==='admin'||metadataRole==='beheerder';
+
+    currentUser={
+      id:u.id,
+      username:name,
+      email,
+      role:isAdmin?'admin':'contributor',
+      clerkRole:crole||'self'
+    };
+
+    const firstConnection=!centralMode;
+    let connected=false;
+
+    // Clerk kan vlak na een sessie-update heel even geen bruikbaar token leveren.
+    // Daarom proberen we de eerste centrale leesactie een paar keer opnieuw.
+    for(let attempt=0;attempt<3&&!connected;attempt++){
+      connected=await refreshCentralSettings({silent:true,force:true});
+      if(!connected&&attempt<2){
+        await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));
+      }
+    }
+
+    if(connected){
+      startCentralSync();
+      if(firstConnection)toast('Centrale database verbonden');
+    }else if(CENTRAL_REQUIRED&&!centralMode){
+      // Alleen waarschuwen wanneer er nog nooit een centrale verbinding is geweest.
+      // Een losse tijdelijke Clerk-event mag geen vals databasealarm tonen.
+      toast('Centrale database niet bereikbaar. Wijzigingen zijn tijdelijk geblokkeerd.','bad');
+    }
+
+    $('loginScreen').classList.add('hidden');
+    applyRoleUI();
+    renderAll();
+    mountClerkUserButton();
+    console.info('Clerk rolcontrole',{metadataRole,crole,appRole:currentUser.role,centralMode});
+    return true;
+  }finally{
+    clerkSyncBusy=false;
+  }
+}
 function mountClerkUserButton(){if(!window.Clerk?.user||clerkUserButtonMounted)return;const node=$('clerkUserButton');if(!node)return;try{Clerk.mountUserButton(node,{appearance:{variables:{colorPrimary:'#2268d8'}}});clerkUserButtonMounted=true}catch(e){console.warn(e)}}
 function mountClerkOrganizationProfile(){const node=$('clerkOrgProfile'),status=$('clerkOrgStatus');if(!node||!window.Clerk?.user)return;if(!clerkMembership){if(status){status.className='safety ok';status.innerHTML='<strong>Zelfregistratie is actief.</strong> Nieuwe gebruikers maken zelf een account via de login en krijgen automatisch de rol <strong>Bijdrager</strong>. Een Clerk Organization is alleen nodig als je daarnaast handmatige uitnodigingen per e-mail wilt beheren.'}node.innerHTML='';return}if(status){status.className='safety ok';status.innerHTML=`<strong>${esc(clerkMembership.organization?.name||'Organisatie')}</strong> · jouw rol: ${clerkMembership.role==='org:admin'?'Admin':'Member'}. Zelfregistratie blijft toegestaan; Organization-uitnodigingen zijn aanvullend.`}if(clerkOrgMounted)return;try{Clerk.mountOrganizationProfile(node,{routing:'hash',appearance:{variables:{colorPrimary:'#2268d8',borderRadius:'0.75rem'}}});clerkOrgMounted=true}catch(e){status.className='safety danger';status.textContent='Clerk gebruikersbeheer kon niet worden geladen: '+e.message}}
 async function initClerkAuth(){const key=getClerkKey();$('loginScreen').classList.remove('hidden');if(!key){showClerkPane('clerkSetupPane');$('clerkGateSubtitle').textContent='Eenmalige Clerk-koppeling';return}showClerkPane('clerkLoadingPane');try{const domain=clerkKeyDomain(key);if(!domain)throw new Error('De Publishable Key lijkt ongeldig.');$('clerkLoadingText').textContent='Clerk-beveiliging laden…';await loadExternal(`https://${domain}/npm/@clerk/ui@1/dist/ui.browser.js`);await loadExternal(`https://${domain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`,{'data-clerk-publishable-key':key});if(!window.Clerk)throw new Error('ClerkJS werd niet geïnitialiseerd.');await Clerk.load({ui:{ClerkUI:window.__internal_ClerkUICtor},afterSignOutUrl:window.location.href});clerkInitialized=true;if(Clerk.user){await syncClerkUser()}else{showClerkPane('clerkSignInPane');$('clerkGateSubtitle').textContent='Meld je aan of maak zelf een account aan';Clerk.mountSignIn($('clerkSignInMount'),{appearance:{variables:{colorPrimary:'#2268d8',borderRadius:'0.75rem'}}})}Clerk.addListener(async({user})=>{if(user){await syncClerkUser()}else{stopCentralSync();centralMode=false;centralPatch={upserts:[],deleted:[]};centralSignature='';rebuildRows();renderAll();$('loginScreen').classList.remove('hidden');showClerkPane('clerkSignInPane');if($('clerkSignInMount')&&!$('clerkSignInMount').children.length)Clerk.mountSignIn($('clerkSignInMount'))}})}catch(e){console.error(e);showClerkPane('clerkErrorPane');$('clerkErrorText').textContent=e.message||String(e)}}
