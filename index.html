@@ -89,7 +89,7 @@
 
 <script>
 'use strict';
-const APP_VERSION='5.5-central-sync';
+const APP_VERSION='5.6-central-auth-fix';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -123,7 +123,31 @@ function backfillAuditMetadata(){let changed=false;const hist=state.history||[];
 function sameRow(a,b){return ROW_KEYS.every(k=>JSON.stringify(a[k]??'')===JSON.stringify(b[k]??''));}
 function writePatch(){if(centralMode)return;const ups=[];const current=new Map(rows.map(r=>[r.id,r]));const deleted=[];for(const base of BASE){if(!current.has(base.id)){deleted.push(base.id);continue;}const cur=current.get(base.id);if(!sameRow(cur,base))ups.push(cur);}for(const r of rows)if(!BASE_MAP.has(r.id))ups.push(r);state.patch={upserts:ups,deleted};}
 function saveState(){writePatch();try{localStorage.setItem(STATE_KEY,JSON.stringify(state));updateStorageInfo();return true}catch(e){toast('Lokale opslag is vol. Maak een draagbare HTML of JSON-back-up.','bad');return false;}}
-async function centralApi(method='GET',payload=null){const options={method,credentials:'same-origin',headers:{Accept:'application/json'}};if(payload!==null){options.headers['Content-Type']='application/json';options.body=JSON.stringify(payload)}const response=await fetch(CENTRAL_API,options);let data={};try{data=await response.json()}catch{}if(!response.ok||!data.success)throw new Error(data.error||`Centrale databasefout (${response.status})`);return data}
+async function centralApi(method='GET',payload=null){
+  const headers={Accept:'application/json'};
+  let token='';
+  if(window.Clerk?.user){
+    for(let attempt=0;attempt<4&&!token;attempt++){
+      try{
+        if(window.Clerk?.session?.getToken)token=(await window.Clerk.session.getToken())||'';
+      }catch(e){
+        console.warn('Clerk session token',e);
+      }
+      if(!token&&attempt<3)await new Promise(resolve=>setTimeout(resolve,200*(attempt+1)));
+    }
+  }
+  if(token)headers.Authorization=`Bearer ${token}`;
+  const options={method,credentials:'include',headers};
+  if(payload!==null){
+    options.headers['Content-Type']='application/json';
+    options.body=JSON.stringify(payload);
+  }
+  const response=await fetch(CENTRAL_API,options);
+  let data={};
+  try{data=await response.json()}catch{}
+  if(!response.ok||!data.success)throw new Error(data.error||`Centrale databasefout (${response.status})`);
+  return data;
+}
 function centralPatchSignature(patch){const ups=(patch?.upserts||[]).slice().sort((a,b)=>txt(a.id).localeCompare(txt(b.id)));const del=(patch?.deleted||[]).slice().sort();return JSON.stringify({upserts:ups,deleted:del})}
 async function refreshCentralSettings({silent=false,force=false}={}){if(centralSyncBusy&&!force)return false;centralSyncBusy=true;try{const data=await centralApi('GET');const next={upserts:(data.patch?.upserts||[]).map(normalizeRow),deleted:(data.patch?.deleted||[]).map(txt)};const signature=centralPatchSignature(next);const changed=!centralMode||signature!==centralSignature;centralMode=true;centralPatch=next;centralSignature=signature;if(data.user?.role&&currentUser)currentUser.role=data.user.role;if(changed){rebuildRows();state.favorites=(state.favorites||[]).filter(id=>rows.some(r=>r.id===id));fillOptions();renderAll()}else applyRoleUI();updateStorageInfo();return true}catch(e){console.warn('Centrale database',e);if(!silent)toast('Centrale database niet bereikbaar: '+e.message,'bad');return false}finally{centralSyncBusy=false}}
 function startCentralSync(){if(centralSyncTimer)clearInterval(centralSyncTimer);centralSyncTimer=setInterval(()=>{if(document.visibilityState==='visible'&&window.Clerk?.user)refreshCentralSettings({silent:true})},15000)}
