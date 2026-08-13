@@ -15,6 +15,34 @@ const AUTHORIZED_PARTIES = [
   "https://laser-settings-manager.netlify.app",
 ];
 
+const BLOB_RETRY_DELAYS = [0, 250, 600, 1200];
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withBlobRetry(label, operation) {
+  let lastError;
+
+  for (let attempt = 0; attempt < BLOB_RETRY_DELAYS.length; attempt += 1) {
+    if (BLOB_RETRY_DELAYS[attempt]) {
+      await wait(BLOB_RETRY_DELAYS[attempt]);
+    }
+
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `Netlify Blobs tijdelijk mislukt (${label}) - poging ${attempt + 1}/${BLOB_RETRY_DELAYS.length}`,
+        error?.message || error
+      );
+    }
+  }
+
+  throw lastError;
+}
+
 const SETTING_FIELDS = [
   "materiaal",
   "bewerking",
@@ -219,7 +247,11 @@ async function addHistoryEntry({
 }
 
 async function historyEntries(limit = 300) {
-  const listing = await store.list({ prefix: "history/" });
+  const listing = await withBlobRetry(
+    "list history",
+    () => store.list({ prefix: "history/" })
+  );
+
   const selected = listing.blobs
     .slice()
     .sort((a, b) => String(b.key).localeCompare(String(a.key)))
@@ -228,22 +260,43 @@ async function historyEntries(limit = 300) {
   return (
     await Promise.all(
       selected.map((item) =>
-        store.get(item.key, { type: "json", consistency: "strong" })
+        withBlobRetry(
+          `get ${item.key}`,
+          () =>
+            store.get(item.key, {
+              type: "json",
+              consistency: "strong",
+            })
+        )
       )
     )
   ).filter(Boolean);
 }
 
 async function loadCentralPatch(user) {
-  const [upsertIndex, deletedIndex] = await Promise.all([
-    store.list({ prefix: "upserts/" }),
-    store.list({ prefix: "deleted/" }),
-  ]);
+  // Bewust sequentieel + retry: een tijdelijke fout in één Blob-list mag
+  // de volledige centrale database niet meteen onbereikbaar maken.
+  const upsertIndex = await withBlobRetry(
+    "list upserts",
+    () => store.list({ prefix: "upserts/" })
+  );
+
+  const deletedIndex = await withBlobRetry(
+    "list deleted",
+    () => store.list({ prefix: "deleted/" })
+  );
 
   const upsertsRaw = (
     await Promise.all(
       upsertIndex.blobs.map((entry) =>
-        store.get(entry.key, { type: "json", consistency: "strong" })
+        withBlobRetry(
+          `get ${entry.key}`,
+          () =>
+            store.get(entry.key, {
+              type: "json",
+              consistency: "strong",
+            })
+        )
       )
     )
   ).filter(Boolean);
@@ -258,7 +311,9 @@ async function loadCentralPatch(user) {
         );
 
   const upserts = visibleRows.map((row) => rowForUser(row, user));
-  const deleted = deletedIndex.blobs.map((entry) => entry.key.slice("deleted/".length));
+  const deleted = deletedIndex.blobs.map((entry) =>
+    entry.key.slice("deleted/".length)
+  );
   const deletedSet = new Set(deleted);
 
   const pendingCount = upsertsRaw.filter(
@@ -582,11 +637,11 @@ async function restoreHistory(historyId, user) {
     return json({ success: false, error: "Alleen een Beheerder kan wijzigingen herstellen." }, 403);
   }
 
-  const listing = await store.list({ prefix: "history/" });
+  const listing = await withBlobRetry("list history for restore", () => store.list({ prefix: "history/" }));
   const match = listing.blobs.find((item) => item.key.endsWith(historyId));
   if (!match) return json({ success: false, error: "Geschiedenisitem niet gevonden." }, 404);
 
-  const entry = await store.get(match.key, { type: "json", consistency: "strong" });
+  const entry = await withBlobRetry(`get ${match.key}`, () => store.get(match.key, { type: "json", consistency: "strong" }));
   if (!entry?.restorable) {
     return json({ success: false, error: "Deze actie kan niet worden hersteld." }, 400);
   }
@@ -650,7 +705,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 3,
+        version: 4,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         pendingCount: patch.pendingCount,
