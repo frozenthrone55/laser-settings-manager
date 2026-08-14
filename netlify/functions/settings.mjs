@@ -6,16 +6,25 @@ const clerk = createClerkClient({
   publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
 });
 
-const store = getStore({
-  name: "laser-settings",
-  consistency: "strong",
-});
+// Maak geen Blobs-store op module-niveau.
+// Netlify injecteert de Blobs-context per Function-aanroep. Een warm
+// Function-proces kan anders een eerder aangemaakte store met een verlopen
+// tijdelijk token blijven hergebruiken.
+function primaryStore() {
+  return getStore({
+    name: "laser-settings",
+    consistency: "strong",
+  });
+}
 
-// Alleen als lees-fallback. Schrijfacties blijven via de primaire store lopen.
-const eventualStore = getStore("laser-settings");
+// Alleen als lees-fallback. Schrijfacties blijven via primaryStore() lopen.
+function fallbackStore() {
+  return getStore("laser-settings");
+}
 
 const AUTHORIZED_PARTIES = [
   "https://laser-settings-manager.netlify.app",
+  "https://development--laser-settings-manager.netlify.app",
 ];
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -69,7 +78,7 @@ async function listBlobsResilient(prefix, label) {
   try {
     return await withBlobRetry(
       label,
-      () => store.list({ prefix })
+      () => primaryStore().list({ prefix })
     );
   } catch (strongError) {
     console.warn(
@@ -80,7 +89,7 @@ async function listBlobsResilient(prefix, label) {
     try {
       return await withBlobRetry(
         `${label} eventual fallback`,
-        () => eventualStore.list({ prefix })
+        () => fallbackStore().list({ prefix })
       );
     } catch (eventualError) {
       console.error(
@@ -97,7 +106,7 @@ async function getBlobResilient(key, type = "json") {
     return await withBlobRetry(
       `get ${key}`,
       () =>
-        store.get(key, {
+        primaryStore().get(key, {
           type,
           consistency: "strong",
         })
@@ -112,7 +121,7 @@ async function getBlobResilient(key, type = "json") {
       return await withBlobRetry(
         `get ${key} eventual fallback`,
         () =>
-          eventualStore.get(key, {
+          fallbackStore().get(key, {
             type,
             consistency: "eventual",
           })
@@ -141,6 +150,7 @@ const SETTING_FIELDS = [
   "reliability",
   "tested",
   "machine",
+  "laserWatt",
   "testedAt",
 ];
 
@@ -173,7 +183,23 @@ function cleanSetting(input = {}) {
   result.opmerking = shortText(result.opmerking, 2500);
   result.source = shortText(result.source || "Eigen instelling", 120);
   result.reliability = shortText(result.reliability || "Gemiddeld", 50);
-  result.machine = shortText(result.machine || "70 W diode-laser", 120);
+  const parsedLaserWatt =
+    Number(result.laserWatt) ||
+    Number(String(result.machine || "").match(/(10|20|40|70)\s*W/i)?.[1]) ||
+    70;
+
+  result.laserWatt = parsedLaserWatt;
+  result.machine = shortText(
+    result.machine || `${parsedLaserWatt} W diode-laser`,
+    120
+  );
+
+  const power = Number(result.vermogen);
+  if (Number.isFinite(power)) {
+    result.effectief =
+      Math.round((parsedLaserWatt * power / 100) * 10) / 10;
+  }
+
   result.testedAt = shortText(result.testedAt, 60);
   result.tested = Boolean(result.tested);
 
@@ -183,6 +209,11 @@ function cleanSetting(input = {}) {
 function validateSetting(setting) {
   if (!setting.materiaal) return "Materiaal is verplicht.";
   if (!["Snijden", "Graveren"].includes(setting.bewerking)) return "Ongeldige bewerking.";
+
+  const laserWatt = Number(setting.laserWatt);
+  if (!Number.isFinite(laserWatt) || laserWatt < 1 || laserWatt > 200) {
+    return "Laservermogen moet een geldige optische waarde tussen 1 en 200 W zijn.";
+  }
 
   const power = Number(setting.vermogen);
   if (!Number.isFinite(power) || power < 0 || power > 100) {
@@ -326,7 +357,7 @@ async function addHistoryEntry({
     after,
     restorable: Boolean(restorable),
   };
-  await store.setJSON(`history/${String(Date.now()).padStart(13, "0")}-${id}`, entry);
+  await primaryStore().setJSON(`history/${String(Date.now()).padStart(13, "0")}-${id}`, entry);
   return entry;
 }
 
@@ -486,8 +517,8 @@ async function addSetting(request, user) {
     approvedAt: user.role === "admin" ? now : "",
   };
 
-  await store.setJSON(`upserts/${id}`, row);
-  await store.delete(`deleted/${id}`);
+  await primaryStore().setJSON(`upserts/${id}`, row);
+  await primaryStore().delete(`deleted/${id}`);
 
   await addHistoryEntry({
     type: "add",
@@ -523,7 +554,7 @@ async function updateSetting(request, user) {
   const error = validateSetting(setting);
   if (error) return json({ success: false, error }, 400);
 
-  const existingStored = await store.get(`upserts/${id}`, {
+  const existingStored = await primaryStore().get(`upserts/${id}`, {
     type: "json",
     consistency: "strong",
   });
@@ -554,8 +585,8 @@ async function updateSetting(request, user) {
     approvedAt: existing?.approvedAt || "",
   };
 
-  await store.setJSON(`upserts/${id}`, row);
-  await store.delete(`deleted/${id}`);
+  await primaryStore().setJSON(`upserts/${id}`, row);
+  await primaryStore().delete(`deleted/${id}`);
 
   await addHistoryEntry({
     type: "edit",
@@ -593,11 +624,11 @@ async function deleteSettings(request, user) {
 
   for (const id of ids) {
     const existing = storedRow(
-      await store.get(`upserts/${id}`, { type: "json", consistency: "strong" })
+      await primaryStore().get(`upserts/${id}`, { type: "json", consistency: "strong" })
     );
     const before = existing || snapshots.get(id) || { id };
 
-    await store.setJSON(`deleted/${id}`, {
+    await primaryStore().setJSON(`deleted/${id}`, {
       id,
       deletedAt,
       deletedById: user.id,
@@ -626,7 +657,7 @@ async function approveSetting(id, user) {
   if (!validId(id)) return json({ success: false, error: "Ongeldig instelling-ID." }, 400);
 
   const current = storedRow(
-    await store.get(`upserts/${id}`, { type: "json", consistency: "strong" })
+    await primaryStore().get(`upserts/${id}`, { type: "json", consistency: "strong" })
   );
   if (!current) return json({ success: false, error: "Instelling niet gevonden." }, 404);
 
@@ -639,8 +670,8 @@ async function approveSetting(id, user) {
     approvedAt: now,
   };
 
-  await store.setJSON(`upserts/${id}`, row);
-  await store.delete(`deleted/${id}`);
+  await primaryStore().setJSON(`upserts/${id}`, row);
+  await primaryStore().delete(`deleted/${id}`);
   await addHistoryEntry({
     type: "approve",
     label: `Instelling goedgekeurd: ${row.materiaal} · ${row.bewerking}`,
@@ -661,12 +692,12 @@ async function rejectSetting(id, user) {
   if (!validId(id)) return json({ success: false, error: "Ongeldig instelling-ID." }, 400);
 
   const current = storedRow(
-    await store.get(`upserts/${id}`, { type: "json", consistency: "strong" })
+    await primaryStore().get(`upserts/${id}`, { type: "json", consistency: "strong" })
   );
   if (!current) return json({ success: false, error: "Instelling niet gevonden." }, 404);
 
   const rejectedAt = new Date().toISOString();
-  await store.setJSON(`deleted/${id}`, {
+  await primaryStore().setJSON(`deleted/${id}`, {
     id,
     deletedAt: rejectedAt,
     deletedById: user.id,
@@ -757,7 +788,7 @@ async function restoreHistory(historyId, user) {
   }
 
   if (entry.type === "add" && entry.after?.id) {
-    await store.setJSON(`deleted/${entry.after.id}`, {
+    await primaryStore().setJSON(`deleted/${entry.after.id}`, {
       id: entry.after.id,
       deletedAt: new Date().toISOString(),
       deletedById: user.id,
@@ -766,9 +797,9 @@ async function restoreHistory(historyId, user) {
     });
   } else if (["edit", "delete", "reject"].includes(entry.type) && entry.before?.id) {
     if (Object.keys(entry.before).length > 1) {
-      await store.setJSON(`upserts/${entry.before.id}`, storedRow(entry.before));
+      await primaryStore().setJSON(`upserts/${entry.before.id}`, storedRow(entry.before));
     }
-    await store.delete(`deleted/${entry.before.id}`);
+    await primaryStore().delete(`deleted/${entry.before.id}`);
   } else {
     return json({ success: false, error: "Deze actie kan niet worden hersteld." }, 400);
   }
@@ -825,7 +856,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 6,
+        version: 9,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         pendingCount: patch.pendingCount,
