@@ -16,6 +16,7 @@ const eventualStore = getStore("laser-settings");
 
 const AUTHORIZED_PARTIES = [
   "https://laser-settings-manager.netlify.app",
+  "https://development--laser-settings-manager.netlify.app",
 ];
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -825,7 +826,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 6,
+        version: 7,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         pendingCount: patch.pendingCount,
