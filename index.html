@@ -281,12 +281,12 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 <div class="modalBackdrop hidden" id="confirmBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="confirmTitle">Bevestigen</h2><button class="modalClose" data-close="confirmBackdrop">×</button></div><div class="modalBody"><div class="confirmIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg></div><div id="confirmMessage" class="confirmText"></div><div class="field hidden" id="confirmTypeWrap"><label>Typ <span class="confirmCode">VERWIJDER</span></label><input id="confirmType" autocomplete="off" placeholder="VERWIJDER"></div></div><div class="modalFoot"><button class="btn secondary" data-close="confirmBackdrop">Annuleren</button><button class="btn danger" id="confirmOk">Bevestigen</button></div></div></div>
 <div class="modalBackdrop hidden" id="materialBackdrop"><div class="modal"><div class="modalHead"><h2>Materiaalprofiel</h2><button class="modalClose" data-close="materialBackdrop">×</button></div><div class="modalBody" id="materialDetail"></div></div></div>
 <div class="modalBackdrop hidden" id="userBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="userModalTitle">Gebruiker</h2><button class="modalClose" data-close="userBackdrop">×</button></div><div class="modalBody"><div class="field"><label>Naam</label><input id="userName" readonly></div><div class="field" style="margin-top:10px"><label>E-mail</label><input id="userEmail" type="email" readonly></div><div class="field" style="margin-top:10px"><label>Rol</label><select id="userRole"><option value="admin">Beheerder</option><option value="contributor">Bijdrager</option></select></div><div class="safety warn" style="margin-top:14px">Een rolwijziging wordt centraal in Clerk opgeslagen. De gebruiker krijgt de nieuwe rechten bij de volgende sessiecontrole.</div></div><div class="modalFoot"><button class="btn secondary" data-close="userBackdrop">Annuleren</button><button class="btn primary" id="saveUserBtn">Rol opslaan</button></div></div></div>
-<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Voor elke andere houtsoort en elk plaatmateriaal wordt uit de reeds aanwezige 70 W-database een eigen materiaalfactor berekend. Daarmee wordt de Acacia-curve per materiaal aangepast, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Afgeleide snijcurves worden gladgestreken zodat bij hetzelfde aantal passages een hoger vermogenspercentage niet plots een lagere snelheid krijgt. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
+<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Afgeleide snijcurves worden gladgestreken zodat bij hetzelfde aantal passages een hoger vermogenspercentage niet plots een lagere snelheid krijgt. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
 <div class="toastStack" id="toastStack"></div>
 
 <script>
 'use strict';
-const APP_VERSION='2.1.0-dev';
+const APP_VERSION='2.1.1-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -361,6 +361,12 @@ function usableEngraveRow(r){
     Number.isFinite(speed) && speed>0
   );
 }
+function acaciaReferenceKey(r){
+  // De mastercurve wordt gekoppeld op bewerking + dikte + vermogensstap.
+  // Het materiaal mag hier NIET in de sleutel zitten, anders kan bijvoorbeeld
+  // 'Berken multiplex' nooit een Acacia-referentierij vinden.
+  return `${txt(r.bewerking)}|${txt(r.dikte)}|${Number(r.vermogen)}`;
+}
 function cutEnergyIndex(r){
   if(!usableCutRow(r))return null;
   // Voor alle rijen hier is het laservermogen 70 W.
@@ -387,7 +393,7 @@ function buildMaterialFactors(seed70,acaciaMap){
 
     for(const row of seed70){
       if(row.materiaal!==material)continue;
-      const acacia=acaciaMap.get(seedGroupKey(row)+'|'+row.vermogen);
+      const acacia=acaciaMap.get(acaciaReferenceKey(row));
       if(!acacia)continue;
 
       if(row.bewerking==='Snijden'&&usableCutRow(row)&&usableCutRow(acacia)){
@@ -441,7 +447,7 @@ function normalizeMaterialsFromAcacia(seed){
 
   const acaciaRows=raw70.filter(r=>r.materiaal==='Acacia');
   const acaciaMap=new Map(
-    acaciaRows.map(r=>[seedGroupKey(r)+'|'+r.vermogen,r])
+    acaciaRows.map(r=>[acaciaReferenceKey(r),r])
   );
   const factors=buildMaterialFactors(raw70,acaciaMap);
 
@@ -449,7 +455,7 @@ function normalizeMaterialsFromAcacia(seed){
     // Acacia zelf blijft exact de reeds gecontroleerde hoofdcurve.
     if(original.materiaal==='Acacia')return {...original};
 
-    const acacia=acaciaMap.get(seedGroupKey(original)+'|'+original.vermogen);
+    const acacia=acaciaMap.get(acaciaReferenceKey(original));
     const factorInfo=factors.get(original.materiaal)||{
       cutGlobal:1,
       cutByThickness:new Map(),
