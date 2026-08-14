@@ -281,12 +281,12 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 <div class="modalBackdrop hidden" id="confirmBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="confirmTitle">Bevestigen</h2><button class="modalClose" data-close="confirmBackdrop">×</button></div><div class="modalBody"><div class="confirmIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg></div><div id="confirmMessage" class="confirmText"></div><div class="field hidden" id="confirmTypeWrap"><label>Typ <span class="confirmCode">VERWIJDER</span></label><input id="confirmType" autocomplete="off" placeholder="VERWIJDER"></div></div><div class="modalFoot"><button class="btn secondary" data-close="confirmBackdrop">Annuleren</button><button class="btn danger" id="confirmOk">Bevestigen</button></div></div></div>
 <div class="modalBackdrop hidden" id="materialBackdrop"><div class="modal"><div class="modalHead"><h2>Materiaalprofiel</h2><button class="modalClose" data-close="materialBackdrop">×</button></div><div class="modalBody" id="materialDetail"></div></div></div>
 <div class="modalBackdrop hidden" id="userBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="userModalTitle">Gebruiker</h2><button class="modalClose" data-close="userBackdrop">×</button></div><div class="modalBody"><div class="field"><label>Naam</label><input id="userName" readonly></div><div class="field" style="margin-top:10px"><label>E-mail</label><input id="userEmail" type="email" readonly></div><div class="field" style="margin-top:10px"><label>Rol</label><select id="userRole"><option value="admin">Beheerder</option><option value="contributor">Bijdrager</option></select></div><div class="safety warn" style="margin-top:14px">Een rolwijziging wordt centraal in Clerk opgeslagen. De gebruiker krijgt de nieuwe rechten bij de volgende sessiecontrole.</div></div><div class="modalFoot"><button class="btn secondary" data-close="userBackdrop">Annuleren</button><button class="btn primary" id="saveUserBtn">Rol opslaan</button></div></div></div>
-<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm plaatmateriaal wordt een officiële fabrikantreferentie als minimale energie-anker gebruikt. 8 mm wordt alleen als experimentele extrapolatie aangeboden wanneer dit binnen maximaal 6 passages blijft; 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Afgeleide snijcurves worden gladgestreken zodat bij hetzelfde aantal passages een hoger vermogenspercentage niet plots een lagere snelheid krijgt. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
+<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm en 20 W / 6 mm plaatmateriaal worden officiële xTool-referenties als minimale energie-ankers gebruikt. 8 mm wordt conservatief vanuit die ankers geëxtrapoleerd en alleen aangeboden wanneer dit binnen de praktische passlimiet blijft. 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Afgeleide snijcurves worden gladgestreken zodat bij hetzelfde aantal passages een hoger vermogenspercentage niet plots een lagere snelheid krijgt. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
 <div class="toastStack" id="toastStack"></div>
 
 <script>
 'use strict';
-const APP_VERSION='2.1.3-dev';
+const APP_VERSION='2.1.4-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -534,95 +534,133 @@ function isPlywoodLike(material){
 }
 function applyManufacturerAnchors(rows){
   /*
-    Officiële xTool D1 Pro 10W-referentie:
-    6 mm basswood plywood ≈ 100% / 120 mm/min / 4 passes.
+    OFFICIËLE xTool-ankers (D1 Pro):
+    - 10W / 6 mm basswood plywood: 100% / 120 mm/min / 4 passes
+    - 20W / 6 mm birch plywood:    100% / 240 mm/min / 3 passes
 
-    We gebruiken die 6 mm-referentie als harde minimale energie-anker voor
-    10 W plaatmaterialen.
+    De Acacia-master + materiaalfactor blijft de hoofdmethodiek.
+    Deze fabrikantankers voorkomen alleen dat dikkere plaatmaterialen
+    te optimistisch worden berekend.
 
-    Voor 8 mm is er in de xTool-tabel geen rechtstreeks 10 W snelheidsanker.
-    Daarom extrapoleren we bewust conservatief vanaf 6 mm:
-    - maximaal 120 mm/min;
-    - minimaal 6 passes op 100%;
-    - lagere vermogens worden niet als snelle startwaarde aangeboden wanneer
-      meer dan 6 passages nodig zouden zijn.
+    10W:
+    - 6 mm: harde minimale energie-inbreng
+    - 8 mm: conservatieve extrapolatie, max. 6 passes
+    - >=10 mm: geen snelle startwaarde
 
-    Vanaf 10 mm toont de database op 10 W geen snelle startwaarde meer.
-    Zulke diktes kunnen op sommige machines met veel passages technisch
-    mogelijk zijn, maar vallen buiten onze praktische limiet van 6 passages.
+    20W:
+    - 8 mm: conservatieve extrapolatie vanaf 6 mm berkenmultiplex
+    - max. 5 passes; anders Niet aanbevolen
   */
-  const anchor6Energy=(100*4)/120; // relatieve index: power * passes / speed
-  const maxPasses=6;
+  const anchor10w6Energy=(100*4)/120;
+  const anchor20w6Energy=(100*3)/240;
+  const max10wPasses=6;
+  const max20wPasses=5;
 
   for(const r of rows){
     if(
-      Number(r.laserWatt)!==10 ||
       r.bewerking!=='Snijden' ||
       !isPlywoodLike(r.materiaal)
     ) continue;
 
+    const watt=Number(r.laserWatt);
     const thickness=Number(r.dikte);
 
-    // 10 mm en dikker: niet aanbieden als snelle 10 W-startwaarde.
-    if(Number.isFinite(thickness) && thickness>=10){
-      r.snelheid='';
-      r.passes='';
-      r.reliability='Experimenteel';
-      r.opmerking=`Niet aanbevolen als snelle 10 W-startwaarde voor ${thickness} mm plaatmateriaal. Deze dikte valt buiten de praktische limiet van maximaal ${maxPasses} passages in deze database. ${txt(r.opmerking)}`.trim();
-      continue;
-    }
-
-    if(
-      r.snelheid==='' ||
-      r.passes==='' ||
-      !Number.isFinite(Number(r.snelheid)) ||
-      !Number.isFinite(Number(r.vermogen))
-    ) continue;
-
-    // 6 mm: officiële xTool-energieanker.
-    if(thickness===6){
-      const minPasses=Math.ceil(
-        anchor6Energy*Number(r.snelheid)/Math.max(1,Number(r.vermogen))
-      );
-
-      if(minPasses>maxPasses){
+    // -------------------------
+    // 10 W plaatmateriaal
+    // -------------------------
+    if(watt===10){
+      if(Number.isFinite(thickness) && thickness>=10){
         r.snelheid='';
         r.passes='';
         r.reliability='Experimenteel';
-        r.opmerking=`Niet aanbevolen als snelle 10 W-startwaarde voor 6 mm plaatmateriaal: de conservatieve fabrikantanker zou meer dan ${maxPasses} passages vereisen. ${txt(r.opmerking)}`.trim();
+        r.opmerking=`Niet aanbevolen als snelle 10 W-startwaarde voor ${thickness} mm plaatmateriaal. Deze dikte valt buiten de praktische limiet van maximaal ${max10wPasses} passages in deze database. ${txt(r.opmerking)}`.trim();
         continue;
       }
 
-      if(Number(r.passes)<minPasses){
-        r.passes=minPasses;
-        r.opmerking=`Conservatief gecorrigeerd met 10 W / 6 mm plaatmateriaal-anker (minimale energie-inbreng vergelijkbaar met 100% · 120 mm/min · 4 passes). ${txt(r.opmerking)}`.trim();
+      if(
+        r.snelheid==='' ||
+        r.passes==='' ||
+        !Number.isFinite(Number(r.snelheid)) ||
+        !Number.isFinite(Number(r.vermogen))
+      ) continue;
+
+      if(thickness===6){
+        const minPasses=Math.ceil(
+          anchor10w6Energy*Number(r.snelheid)/Math.max(1,Number(r.vermogen))
+        );
+
+        if(minPasses>max10wPasses){
+          r.snelheid='';
+          r.passes='';
+          r.reliability='Experimenteel';
+          r.opmerking=`Niet aanbevolen als snelle 10 W-startwaarde voor 6 mm plaatmateriaal: de conservatieve fabrikantanker zou meer dan ${max10wPasses} passages vereisen. ${txt(r.opmerking)}`.trim();
+          continue;
+        }
+
+        if(Number(r.passes)<minPasses){
+          r.passes=minPasses;
+          r.opmerking=`Conservatief gecorrigeerd met 10 W / 6 mm plaatmateriaal-anker (100% · 120 mm/min · 4 passes). ${txt(r.opmerking)}`.trim();
+        }
+        continue;
       }
-      continue;
+
+      if(thickness===8){
+        const thicknessFactor=Math.pow(8/6,1.35);
+        const requiredEnergy=anchor10w6Energy*thicknessFactor;
+
+        r.snelheid=Math.min(Number(r.snelheid),120);
+
+        const minPasses=Math.ceil(
+          requiredEnergy*Number(r.snelheid)/Math.max(1,Number(r.vermogen))
+        );
+
+        if(minPasses>max10wPasses){
+          r.snelheid='';
+          r.passes='';
+          r.reliability='Experimenteel';
+          r.opmerking=`Niet aanbevolen als snelle 10 W-startwaarde voor 8 mm plaatmateriaal: de conservatieve extrapolatie vanaf het officiële 6 mm-anker zou meer dan ${max10wPasses} passages vereisen. ${txt(r.opmerking)}`.trim();
+          continue;
+        }
+
+        r.passes=Math.max(Number(r.passes)||1,minPasses);
+        r.reliability='Experimenteel';
+        r.opmerking=`Experimentele 8 mm-startwaarde: conservatief geëxtrapoleerd vanaf het officiële 10 W / 6 mm plaatmateriaal-anker. Eerst een kleine materiaaltest uitvoeren. ${txt(r.opmerking)}`.trim();
+        continue;
+      }
     }
 
-    // 8 mm: conservatieve extrapolatie vanaf het officiële 6 mm-anker.
-    if(thickness===8){
-      const thicknessFactor=Math.pow(8/6,1.35);
-      const requiredEnergy=anchor6Energy*thicknessFactor;
+    // -------------------------
+    // 20 W plaatmateriaal
+    // -------------------------
+    if(watt===20 && thickness===8){
+      if(
+        r.snelheid==='' ||
+        r.passes==='' ||
+        !Number.isFinite(Number(r.snelheid)) ||
+        !Number.isFinite(Number(r.vermogen))
+      ) continue;
 
-      // Hogere snelheid maakt de extrapolatie te optimistisch.
-      r.snelheid=Math.min(Number(r.snelheid),120);
+      const thicknessFactor=Math.pow(8/6,1.35);
+      const requiredEnergy=anchor20w6Energy*thicknessFactor;
+
+      // Niet sneller dan het officiële 6 mm berkenmultiplex-anker.
+      r.snelheid=Math.min(Number(r.snelheid),240);
 
       const minPasses=Math.ceil(
         requiredEnergy*Number(r.snelheid)/Math.max(1,Number(r.vermogen))
       );
 
-      if(minPasses>maxPasses){
+      if(minPasses>max20wPasses){
         r.snelheid='';
         r.passes='';
         r.reliability='Experimenteel';
-        r.opmerking=`Niet aanbevolen als snelle 10 W-startwaarde voor 8 mm plaatmateriaal: de conservatieve extrapolatie vanaf het officiële 6 mm-anker zou meer dan ${maxPasses} passages vereisen. ${txt(r.opmerking)}`.trim();
+        r.opmerking=`Niet aanbevolen als snelle 20 W-startwaarde voor 8 mm plaatmateriaal: de conservatieve extrapolatie vanaf het officiële 6 mm berkenmultiplex-anker zou meer dan ${max20wPasses} passages vereisen. ${txt(r.opmerking)}`.trim();
         continue;
       }
 
       r.passes=Math.max(Number(r.passes)||1,minPasses);
       r.reliability='Experimenteel';
-      r.opmerking=`Experimentele 8 mm-startwaarde: conservatief geëxtrapoleerd vanaf het officiële 10 W / 6 mm plaatmateriaal-anker. Eerst een kleine materiaaltest uitvoeren. ${txt(r.opmerking)}`.trim();
+      r.opmerking=`Experimentele 20 W / 8 mm-startwaarde: conservatief geëxtrapoleerd vanaf xTool D1 Pro 20W / 6 mm berkenmultiplex (100% · 240 mm/min · 3 passes). Eerst een materiaaltest uitvoeren. ${txt(r.opmerking)}`.trim();
     }
   }
 }
