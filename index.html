@@ -281,12 +281,12 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 <div class="modalBackdrop hidden" id="confirmBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="confirmTitle">Bevestigen</h2><button class="modalClose" data-close="confirmBackdrop">×</button></div><div class="modalBody"><div class="confirmIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg></div><div id="confirmMessage" class="confirmText"></div><div class="field hidden" id="confirmTypeWrap"><label>Typ <span class="confirmCode">VERWIJDER</span></label><input id="confirmType" autocomplete="off" placeholder="VERWIJDER"></div></div><div class="modalFoot"><button class="btn secondary" data-close="confirmBackdrop">Annuleren</button><button class="btn danger" id="confirmOk">Bevestigen</button></div></div></div>
 <div class="modalBackdrop hidden" id="materialBackdrop"><div class="modal"><div class="modalHead"><h2>Materiaalprofiel</h2><button class="modalClose" data-close="materialBackdrop">×</button></div><div class="modalBody" id="materialDetail"></div></div></div>
 <div class="modalBackdrop hidden" id="userBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="userModalTitle">Gebruiker</h2><button class="modalClose" data-close="userBackdrop">×</button></div><div class="modalBody"><div class="field"><label>Naam</label><input id="userName" readonly></div><div class="field" style="margin-top:10px"><label>E-mail</label><input id="userEmail" type="email" readonly></div><div class="field" style="margin-top:10px"><label>Rol</label><select id="userRole"><option value="admin">Beheerder</option><option value="contributor">Bijdrager</option></select></div><div class="safety warn" style="margin-top:14px">Een rolwijziging wordt centraal in Clerk opgeslagen. De gebruiker krijgt de nieuwe rechten bij de volgende sessiecontrole.</div></div><div class="modalFoot"><button class="btn secondary" data-close="userBackdrop">Annuleren</button><button class="btn primary" id="saveUserBtn">Rol opslaan</button></div></div></div>
-<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> de 70 W-database blijft de basis. De 10 W-, 20 W- en 40 W-startwaarden worden automatisch afgeleid en conservatief gekalibreerd aan officiële xTool- en Ortur-referenties. Gebruik ze om snel te starten, maar maak altijd eerst een materiaaltest.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
+<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> de 70 W-database blijft de relatieve materiaalbasis. De 10 W-, 20 W- en 40 W-startwaarden worden conservatief afgeleid en gekalibreerd aan officiële xTool- en Ortur-referenties. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Gebruik alle afgeleide waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
 <div class="toastStack" id="toastStack"></div>
 
 <script>
 'use strict';
-const APP_VERSION='2.0.2-dev';
+const APP_VERSION='2.0.4-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -331,59 +331,125 @@ function interpolateEngraveSpeed(group,equivalentPct){
   return roundSpeed(Number(usable[usable.length-1].snelheid),50);
 }
 function expandSeedRows(seed){
-  const base70=seed.map(r=>({...r,laserWatt:70,machine:r.machine||'70 W diode-laser',effectief:effectiveWatt(70,r.vermogen)}));
-  const cut100=new Map();
+  const base70=seed.map(r=>({
+    ...r,
+    laserWatt:70,
+    machine:r.machine||'70 W diode-laser',
+    effectief:effectiveWatt(70,r.vermogen)
+  }));
+
   const engrGroups=new Map();
   for(const r of base70){
-    const key=seedGroupKey(r);
-    if(r.bewerking==='Snijden'&&Number(r.vermogen)===100)cut100.set(key,r);
     if(r.bewerking==='Graveren'){
+      const key=seedGroupKey(r);
       if(!engrGroups.has(key))engrGroups.set(key,[]);
       engrGroups.get(key).push(r);
     }
   }
+
   const out=[...base70];
-  const cutCorrection={10:.40,20:.80,40:.86};
-  const maxReasonablePasses={10:12,20:12,40:10};
+
+  /*
+    Kalibratie van afgeleide snijstartpunten:
+    - de bestaande 70 W-curve blijft de relatieve materiaalreferentie;
+    - snelheid schaalt met optisch vermogen;
+    - 0,80 is een conservatieve correctie die de 10 W-lindehoutcurve
+      dicht bij officiële 10 W-basswoodreferenties brengt;
+    - we verkiezen een bruikbare minimumsnelheid met meerdere passes boven
+      extreem trage éénpassnedes;
+    - meer dan het praktische passlimiet wordt niet als startwaarde getoond.
+  */
+  const cutCalibration={10:.80,20:.80,40:.80};
+  const preferredMinSpeed={10:120,20:180,40:300};
+  const maxPracticalPasses={10:6,20:5,40:4};
+
   for(const laserWatt of [10,20,40]){
     for(const r of base70){
-      const nr={...r,id:`${r.id}-w${laserWatt}`,laserWatt,machine:`${laserWatt} W diode-laser`,effectief:effectiveWatt(laserWatt,r.vermogen),tested:false,testedAt:'',source:'Afgeleid startpunt · fabrikantreferenties'};
-      const prefix=`Afgeleid ${laserWatt} W-startpunt op basis van de 70 W-referentiecurve en gekalibreerd met officiële xTool/Ortur 10/20/40 W materiaalreferenties. Altijd eerst een kleine materiaaltest uitvoeren.`;
+      const nr={
+        ...r,
+        id:`${r.id}-w${laserWatt}`,
+        laserWatt,
+        machine:`${laserWatt} W diode-laser`,
+        effectief:effectiveWatt(laserWatt,r.vermogen),
+        tested:false,
+        testedAt:'',
+        source:'Afgeleid startpunt · fabrikantreferenties'
+      };
+
+      const prefix=`Afgeleid ${laserWatt} W-startpunt uit de 70 W-materiaalcurve, conservatief gekalibreerd met officiële 10/20/40 W fabrikantreferenties. Altijd eerst een kleine materiaaltest uitvoeren.`;
+
       if(r.bewerking==='Snijden'){
-        const ref=cut100.get(seedGroupKey(r));
-        if(ref&&ref.snelheid!==''&&Number(ref.snelheid)>0){
-          const ratio=(laserWatt*Number(r.vermogen)/100)/70;
-          let rawSpeed=Number(ref.snelheid)*ratio*cutCorrection[laserWatt];
-          let passes=Math.max(1,Number(ref.passes)||1);
-          const minSpeed=100;
-          if(rawSpeed>0&&rawSpeed<minSpeed){
-            passes=Math.ceil(passes*(minSpeed/rawSpeed));
-            rawSpeed=minSpeed;
-          }
-          const notRecommended=!Number.isFinite(rawSpeed)||rawSpeed<=0||passes>maxReasonablePasses[laserWatt]||Number(r.vermogen)<10;
-          nr.snelheid=Number.isFinite(rawSpeed)&&rawSpeed>0?roundSpeed(rawSpeed,10):'';
-          nr.passes=Number.isFinite(passes)?Math.min(99,passes):'';
-          nr.airAssist='Ja – hoog (richtwaarde 25–60 L/min)';
-          nr.reliability=notRecommended?'Experimenteel':'Gemiddeld';
-          nr.opmerking=`${notRecommended?'Niet aanbevolen als directe productiewaarde; alleen gebruiken als voorzichtige testreferentie. ':''}${prefix} ${txt(r.opmerking)}`.trim();
-        }else{
+        const sourceSpeed=Number(r.snelheid);
+        const sourcePasses=Math.max(1,Number(r.passes)||1);
+        const sourceNote=txt(r.opmerking).toLowerCase();
+
+        // Als de oorspronkelijke 70 W-rij zelf geen snijwaarde aanbeveelt,
+        // verzinnen we voor een zwakkere laser geen snelheid of tientallen passes.
+        if(
+          !Number.isFinite(sourceSpeed) ||
+          sourceSpeed<=0 ||
+          sourceNote.includes('niet aanbevolen')
+        ){
           nr.snelheid='';
           nr.passes='';
           nr.reliability='Experimenteel';
-          nr.opmerking=`Niet aanbevolen: onvoldoende betrouwbare snijreferentie voor deze combinatie. ${prefix} ${txt(r.opmerking)}`.trim();
+          nr.opmerking=`Niet aanbevolen voor direct gebruik op ${laserWatt} W: de 70 W-basis bevat voor deze combinatie al geen betrouwbare snijstartwaarde. ${prefix} ${txt(r.opmerking)}`.trim();
+        }else{
+          let scaledSpeed=
+            sourceSpeed*
+            (laserWatt/70)*
+            cutCalibration[laserWatt];
+
+          let passes=sourcePasses;
+          const preferred=preferredMinSpeed[laserWatt];
+
+          // Vermijd extreem trage snedes: verhoog indien nodig het aantal passes
+          // terwijl ongeveer dezelfde energie per lengte behouden blijft.
+          if(scaledSpeed<preferred){
+            passes=Math.ceil(sourcePasses*(preferred/scaledSpeed));
+            scaledSpeed=preferred;
+          }
+
+          const practical=
+            Number.isFinite(scaledSpeed) &&
+            scaledSpeed>0 &&
+            Number.isFinite(passes) &&
+            passes>=1 &&
+            passes<=maxPracticalPasses[laserWatt];
+
+          if(practical){
+            nr.snelheid=roundSpeed(scaledSpeed,10);
+            nr.passes=passes;
+            nr.airAssist='Ja – hoog (richtwaarde 25–60 L/min)';
+            nr.reliability='Gemiddeld';
+            nr.opmerking=`${prefix} ${passes>1?'Meerpassensnede; controleer focus en resultaat tussen de passages. ':''}${txt(r.opmerking)}`.trim();
+          }else{
+            nr.snelheid='';
+            nr.passes='';
+            nr.reliability='Experimenteel';
+            nr.opmerking=`Niet aanbevolen als snelle startwaarde op ${laserWatt} W: de berekende snede zou meer dan ${maxPracticalPasses[laserWatt]} passages of een onpraktisch lage snelheid vereisen. ${prefix} ${txt(r.opmerking)}`.trim();
+          }
         }
       }else{
-        const eqPct=laserWatt*Number(r.vermogen)/70;
-        const speed=interpolateEngraveSpeed(engrGroups.get(seedGroupKey(r))||[],eqPct);
+        // Graveren: zoek op de 70 W-curve naar ongeveer hetzelfde effectieve
+        // optische vermogen en interpoleer de snelheid.
+        const equivalentPct=laserWatt*Number(r.vermogen)/70;
+        const speed=interpolateEngraveSpeed(
+          engrGroups.get(seedGroupKey(r))||[],
+          equivalentPct
+        );
+
         nr.snelheid=speed;
         nr.passes=1;
         nr.airAssist='Uit / zeer laag';
         nr.reliability=speed?'Gemiddeld':'Experimenteel';
         nr.opmerking=`${prefix} ${txt(r.opmerking)}`.trim();
       }
+
       out.push(nr);
     }
   }
+
   return out;
 }
 const BASE=expandSeedRows(BASE_ROWS).map(normalizeRow);const BASE_MAP=new Map(BASE.map(r=>[r.id,r]));
