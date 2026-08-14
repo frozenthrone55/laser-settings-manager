@@ -281,12 +281,12 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 <div class="modalBackdrop hidden" id="confirmBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="confirmTitle">Bevestigen</h2><button class="modalClose" data-close="confirmBackdrop">×</button></div><div class="modalBody"><div class="confirmIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg></div><div id="confirmMessage" class="confirmText"></div><div class="field hidden" id="confirmTypeWrap"><label>Typ <span class="confirmCode">VERWIJDER</span></label><input id="confirmType" autocomplete="off" placeholder="VERWIJDER"></div></div><div class="modalFoot"><button class="btn secondary" data-close="confirmBackdrop">Annuleren</button><button class="btn danger" id="confirmOk">Bevestigen</button></div></div></div>
 <div class="modalBackdrop hidden" id="materialBackdrop"><div class="modal"><div class="modalHead"><h2>Materiaalprofiel</h2><button class="modalClose" data-close="materialBackdrop">×</button></div><div class="modalBody" id="materialDetail"></div></div></div>
 <div class="modalBackdrop hidden" id="userBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="userModalTitle">Gebruiker</h2><button class="modalClose" data-close="userBackdrop">×</button></div><div class="modalBody"><div class="field"><label>Naam</label><input id="userName" readonly></div><div class="field" style="margin-top:10px"><label>E-mail</label><input id="userEmail" type="email" readonly></div><div class="field" style="margin-top:10px"><label>Rol</label><select id="userRole"><option value="admin">Beheerder</option><option value="contributor">Bijdrager</option></select></div><div class="safety warn" style="margin-top:14px">Een rolwijziging wordt centraal in Clerk opgeslagen. De gebruiker krijgt de nieuwe rechten bij de volgende sessiecontrole.</div></div><div class="modalFoot"><button class="btn secondary" data-close="userBackdrop">Annuleren</button><button class="btn primary" id="saveUserBtn">Rol opslaan</button></div></div></div>
-<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm en 20 W / 6 mm plaatmateriaal worden officiële xTool-referenties als minimale energie-ankers gebruikt. 8 mm wordt conservatief vanuit die ankers geëxtrapoleerd en alleen aangeboden wanneer dit binnen de praktische passlimiet blijft. 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. De afgeleide snijcurves worden daarna dubbel gladgestreken: bij hoger vermogen mag het aantal passages niet opnieuw toenemen en binnen hetzelfde aantal passages mag de snelheid niet terugvallen. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
+<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm en 20 W / 6 mm plaatmateriaal worden officiële xTool-referenties als minimale energie-ankers gebruikt. 8 mm wordt conservatief vanuit die ankers geëxtrapoleerd en alleen aangeboden wanneer dit binnen de praktische passlimiet blijft. Voor 40 W / 12 mm wordt per houtsoort de eigen 8 mm-curve gebruikt en de diktegroei gekalibreerd tussen officiële xTool 40 W-referenties voor 8 en 15 mm basswood plywood. 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. De afgeleide snijcurves worden daarna dubbel gladgestreken: bij hoger vermogen mag het aantal passages niet opnieuw toenemen en binnen hetzelfde aantal passages mag de snelheid niet terugvallen. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
 <div class="toastStack" id="toastStack"></div>
 
 <script>
 'use strict';
-const APP_VERSION='2.1.5-dev';
+const APP_VERSION='2.1.6-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -537,10 +537,13 @@ function applyManufacturerAnchors(rows){
     OFFICIËLE xTool-ankers (D1 Pro):
     - 10W / 6 mm basswood plywood: 100% / 120 mm/min / 4 passes
     - 20W / 6 mm birch plywood:    100% / 240 mm/min / 3 passes
+    - 40W / 8 mm basswood plywood: 100% / 360 mm/min / 1 pass
+    - 40W / 15 mm basswood plywood:100% / 120 mm/min / 1 pass
+      (met verlaagde focus volgens xTool)
 
     De Acacia-master + materiaalfactor blijft de hoofdmethodiek.
-    Deze fabrikantankers voorkomen alleen dat dikkere plaatmaterialen
-    te optimistisch worden berekend.
+    Fabrikantankers voorkomen dat dikke plaatmaterialen te optimistisch
+    of juist volledig leeg worden berekend.
 
     10W:
     - 6 mm: harde minimale energie-inbreng
@@ -550,11 +553,44 @@ function applyManufacturerAnchors(rows){
     20W:
     - 8 mm: conservatieve extrapolatie vanaf 6 mm berkenmultiplex
     - max. 5 passes; anders Niet aanbevolen
+
+    40W:
+    - 12 mm: per materiaal afgeleid van de reeds berekende 8 mm / 100%-rij
+    - diktegroei gekalibreerd tussen xTool 8 mm en 15 mm
+    - max. 4 passes
+    - betrouwbaarheid altijd Experimenteel
   */
   const anchor10w6Energy=(100*4)/120;
   const anchor20w6Energy=(100*3)/240;
   const max10wPasses=6;
   const max20wPasses=5;
+  const max40w12Passes=4;
+
+  // xTool D1 Pro 40W: energie-index van 8 naar 15 mm groeit ongeveer factor 3.
+  // Gebruik die groei exponentieel als diktefactor voor 12 mm.
+  const xTool40ThicknessExponent=Math.log(3)/Math.log(15/8);
+  const factor8to12=Math.pow(12/8,xTool40ThicknessExponent);
+
+  // Behoud materiaalverschillen: pak voor ieder plaatmateriaal zijn eigen
+  // reeds berekende 40W / 8mm / 100%-startpunt.
+  const ref40w8ByMaterial=new Map();
+  for(const x of rows){
+    if(
+      Number(x.laserWatt)===40 &&
+      x.bewerking==='Snijden' &&
+      Number(x.dikte)===8 &&
+      Number(x.vermogen)===100 &&
+      isPlywoodLike(x.materiaal) &&
+      x.snelheid!=='' &&
+      x.passes!=='' &&
+      Number.isFinite(Number(x.snelheid)) &&
+      Number(x.snelheid)>0 &&
+      Number.isFinite(Number(x.passes)) &&
+      Number(x.passes)>0
+    ){
+      ref40w8ByMaterial.set(txt(x.materiaal),x);
+    }
+  }
 
   for(const r of rows){
     if(
@@ -661,6 +697,47 @@ function applyManufacturerAnchors(rows){
       r.passes=Math.max(Number(r.passes)||1,minPasses);
       r.reliability='Experimenteel';
       r.opmerking=`Experimentele 20 W / 8 mm-startwaarde: conservatief geëxtrapoleerd vanaf xTool D1 Pro 20W / 6 mm berkenmultiplex (100% · 240 mm/min · 3 passes). Eerst een materiaaltest uitvoeren. ${txt(r.opmerking)}`.trim();
+      continue;
+    }
+
+    // -------------------------
+    // 40 W plaatmateriaal
+    // -------------------------
+    if(watt===40 && thickness===12){
+      const source8=ref40w8ByMaterial.get(txt(r.materiaal));
+
+      if(!source8){
+        // Geen betrouwbare materiaalspecifieke 8 mm-basis: laat de rij leeg.
+        r.snelheid='';
+        r.passes='';
+        r.reliability='Experimenteel';
+        r.opmerking=`Geen betrouwbare 40 W / 8 mm materiaalbasis gevonden om 12 mm conservatief te extrapoleren. ${txt(r.opmerking)}`.trim();
+        continue;
+      }
+
+      const sourceEnergy=
+        (100*Number(source8.passes))/Number(source8.snelheid);
+      const requiredEnergy=sourceEnergy*factor8to12;
+
+      // Voor 12 mm houden we de startsnelheid bewust laag en overzichtelijk.
+      const preferredSpeed=180;
+      const minPasses=Math.ceil(
+        requiredEnergy*preferredSpeed/Math.max(1,Number(r.vermogen))
+      );
+
+      if(minPasses>max40w12Passes){
+        r.snelheid='';
+        r.passes='';
+        r.reliability='Experimenteel';
+        r.opmerking=`Niet aanbevolen als snelle 40 W-startwaarde voor 12 mm plaatmateriaal: de conservatieve extrapolatie vanaf de eigen 8 mm-curve zou meer dan ${max40w12Passes} passages vereisen. ${txt(r.opmerking)}`.trim();
+        continue;
+      }
+
+      r.snelheid=preferredSpeed;
+      r.passes=Math.max(1,minPasses);
+      r.reliability='Experimenteel';
+      r.source='Acacia-referentie · materiaalfactor';
+      r.opmerking=`Experimentele 40 W / 12 mm-startwaarde. Afgeleid van de eigen 8 mm / 100%-materiaalcurve en conservatief opgeschaald met de officiële xTool D1 Pro 40W-referenties voor 8 mm en 15 mm basswood plywood. Bij dik materiaal focus en air assist zorgvuldig optimaliseren en eerst een kleine materiaaltest uitvoeren. ${txt(r.opmerking)}`.trim();
     }
   }
 }
