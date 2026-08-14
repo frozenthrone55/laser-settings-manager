@@ -142,6 +142,7 @@ const SETTING_FIELDS = [
   "reliability",
   "tested",
   "machine",
+  "laserWatt",
   "testedAt",
 ];
 
@@ -174,7 +175,23 @@ function cleanSetting(input = {}) {
   result.opmerking = shortText(result.opmerking, 2500);
   result.source = shortText(result.source || "Eigen instelling", 120);
   result.reliability = shortText(result.reliability || "Gemiddeld", 50);
-  result.machine = shortText(result.machine || "70 W diode-laser", 120);
+  const parsedLaserWatt =
+    Number(result.laserWatt) ||
+    Number(String(result.machine || "").match(/(10|20|40|70)\s*W/i)?.[1]) ||
+    70;
+
+  result.laserWatt = parsedLaserWatt;
+  result.machine = shortText(
+    result.machine || `${parsedLaserWatt} W diode-laser`,
+    120
+  );
+
+  const power = Number(result.vermogen);
+  if (Number.isFinite(power)) {
+    result.effectief =
+      Math.round((parsedLaserWatt * power / 100) * 10) / 10;
+  }
+
   result.testedAt = shortText(result.testedAt, 60);
   result.tested = Boolean(result.tested);
 
@@ -184,6 +201,11 @@ function cleanSetting(input = {}) {
 function validateSetting(setting) {
   if (!setting.materiaal) return "Materiaal is verplicht.";
   if (!["Snijden", "Graveren"].includes(setting.bewerking)) return "Ongeldige bewerking.";
+
+  const laserWatt = Number(setting.laserWatt);
+  if (!Number.isFinite(laserWatt) || laserWatt < 1 || laserWatt > 200) {
+    return "Laservermogen moet een geldige optische waarde tussen 1 en 200 W zijn.";
+  }
 
   const power = Number(setting.vermogen);
   if (!Number.isFinite(power) || power < 0 || power > 100) {
@@ -826,7 +848,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 7,
+        version: 8,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         pendingCount: patch.pendingCount,
