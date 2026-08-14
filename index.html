@@ -281,12 +281,12 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 <div class="modalBackdrop hidden" id="confirmBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="confirmTitle">Bevestigen</h2><button class="modalClose" data-close="confirmBackdrop">×</button></div><div class="modalBody"><div class="confirmIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg></div><div id="confirmMessage" class="confirmText"></div><div class="field hidden" id="confirmTypeWrap"><label>Typ <span class="confirmCode">VERWIJDER</span></label><input id="confirmType" autocomplete="off" placeholder="VERWIJDER"></div></div><div class="modalFoot"><button class="btn secondary" data-close="confirmBackdrop">Annuleren</button><button class="btn danger" id="confirmOk">Bevestigen</button></div></div></div>
 <div class="modalBackdrop hidden" id="materialBackdrop"><div class="modal"><div class="modalHead"><h2>Materiaalprofiel</h2><button class="modalClose" data-close="materialBackdrop">×</button></div><div class="modalBody" id="materialDetail"></div></div></div>
 <div class="modalBackdrop hidden" id="userBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="userModalTitle">Gebruiker</h2><button class="modalClose" data-close="userBackdrop">×</button></div><div class="modalBody"><div class="field"><label>Naam</label><input id="userName" readonly></div><div class="field" style="margin-top:10px"><label>E-mail</label><input id="userEmail" type="email" readonly></div><div class="field" style="margin-top:10px"><label>Rol</label><select id="userRole"><option value="admin">Beheerder</option><option value="contributor">Bijdrager</option></select></div><div class="safety warn" style="margin-top:14px">Een rolwijziging wordt centraal in Clerk opgeslagen. De gebruiker krijgt de nieuwe rechten bij de volgende sessiecontrole.</div></div><div class="modalFoot"><button class="btn secondary" data-close="userBackdrop">Annuleren</button><button class="btn primary" id="saveUserBtn">Rol opslaan</button></div></div></div>
-<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Afgeleide snijcurves worden gladgestreken zodat bij hetzelfde aantal passages een hoger vermogenspercentage niet plots een lagere snelheid krijgt. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
+<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm plaatmateriaal wordt bovendien een officiële fabrikantreferentie als minimale energie-anker gebruikt, zodat de Acacia-berekening niet te optimistisch wordt. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Afgeleide snijcurves worden gladgestreken zodat bij hetzelfde aantal passages een hoger vermogenspercentage niet plots een lagere snelheid krijgt. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
 <div class="toastStack" id="toastStack"></div>
 
 <script>
 'use strict';
-const APP_VERSION='2.1.1-dev';
+const APP_VERSION='2.1.2-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -528,6 +528,53 @@ function normalizeMaterialsFromAcacia(seed){
     return nr;
   });
 }
+function isPlywoodLike(material){
+  const m=txt(material).toLowerCase();
+  return m.includes('multiplex')||m.includes('plywood');
+}
+function applyManufacturerAnchors(rows){
+  /*
+    Officiële xTool-referentie voor D1 Pro 10W:
+    6 mm basswood plywood ≈ 100% / 120 mm/min / 4 passes.
+
+    Voor afgeleide 6 mm plaatmaterialen gebruiken we dit alleen als
+    conservatieve ondergrens voor energie-inbreng. We vervangen de
+    Acacia/materiaalfactor dus niet; we verhinderen alleen dat de berekende
+    curve optimistischer wordt dan dit praktische 10 W-anker.
+  */
+  const anchorEnergy=(100*4)/120; // relatieve index: power * passes / speed
+  const maxPasses=6;
+
+  for(const r of rows){
+    if(
+      Number(r.laserWatt)!==10 ||
+      r.bewerking!=='Snijden' ||
+      Number(r.dikte)!==6 ||
+      !isPlywoodLike(r.materiaal) ||
+      r.snelheid==='' ||
+      r.passes==='' ||
+      !Number.isFinite(Number(r.snelheid)) ||
+      !Number.isFinite(Number(r.vermogen))
+    ) continue;
+
+    const minPasses=Math.ceil(
+      anchorEnergy*Number(r.snelheid)/Math.max(1,Number(r.vermogen))
+    );
+
+    if(minPasses>maxPasses){
+      r.snelheid='';
+      r.passes='';
+      r.reliability='Experimenteel';
+      r.opmerking=`Niet aanbevolen als snelle 10 W-startwaarde voor 6 mm plaatmateriaal: de conservatieve fabrikantanker zou meer dan ${maxPasses} passages vereisen. ${txt(r.opmerking)}`.trim();
+      continue;
+    }
+
+    if(Number(r.passes)<minPasses){
+      r.passes=minPasses;
+      r.opmerking=`Conservatief gecorrigeerd met 10 W / 6 mm plaatmateriaal-anker (minimale energie-inbreng vergelijkbaar met 100% · 120 mm/min · 4 passes). ${txt(r.opmerking)}`.trim();
+    }
+  }
+}
 function smoothCutCurves(rows,laserWatts,skipAcacia=false){
   for(const laserWatt of laserWatts){
     const groups=new Map();
@@ -684,6 +731,9 @@ function expandSeedRows(seed){
       out.push(nr);
     }
   }
+
+  // Conservatieve fabrikantankers bovenop de Acacia/materiaalfactor.
+  applyManufacturerAnchors(out);
 
   // Professionele monotone correctie voor de afgeleide wattages.
   smoothCutCurves(out,[10,20,40],false);
