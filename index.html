@@ -226,14 +226,14 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 
 <div class="clerkGate" id="loginScreen">
   <div class="clerkGateCard">
-    <div class="loginBrand"><div class="brandmark"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M5 4h14v8H5z"></path><path d="M8 12l-2 5h12l-2-5M12 17v4M9 21h6"></path><path d="M12 6v3"></path></svg></div><div><h1>Instellingen diodelasers</h1><p id="clerkGateSubtitle">Eenmalige Clerk-koppeling</p></div></div>
-    <div id="clerkSetupPane" class="">
+    <div class="loginBrand"><div class="brandmark"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M5 4h14v8H5z"></path><path d="M8 12l-2 5h12l-2-5M12 17v4M9 21h6"></path><path d="M12 6v3"></path></svg></div><div><h1>Instellingen diodelasers</h1><p id="clerkGateSubtitle">Aanmelden</p></div></div>
+    <div id="clerkSetupPane" class="hidden">
       <div class="safety warn"><strong>Eenmalige koppeling nodig.</strong> Plak hieronder alleen je Clerk <strong>Publishable Key</strong> (begint met <code>pk_</code>). Gebruik hier nooit een Secret Key.</div>
       <div class="field" style="margin-top:12px"><label>Clerk Publishable Key</label><input id="clerkKeyInput" autocomplete="off" placeholder="pk_test_... of pk_live_..."></div>
       <div class="clerkSetupActions"><button class="btn primary" id="saveClerkKeyBtn">Koppelen + index.html maken</button></div>
       <div class="loginHint">Na het koppelen downloadt het programma meteen een <strong>index.html</strong> waarin de Publishable Key is ingebouwd. Die versie zet je daarna op Netlify.</div>
     </div>
-    <div id="clerkLoadingPane" class="hidden"><div class="clerkStatus"><span class="clerkDot warn"></span><span id="clerkLoadingText">Clerk wordt geladen…</span></div></div>
+    <div id="clerkLoadingPane" class=""><div class="clerkStatus"><span class="clerkDot warn"></span><span id="clerkLoadingText">Clerk wordt geladen…</span></div></div>
     <div id="clerkSignInPane" class="hidden"><div class="safety ok" style="margin-bottom:12px"><strong>Nog geen account?</strong> Kies in het aanmeldvenster <strong>Registreren / Sign up</strong>. Na verificatie van je e-mailadres krijg je automatisch de rol <strong>Bijdrager</strong>: je mag waarden toevoegen, maar niet wijzigen of verwijderen.</div><div id="clerkSignInMount" class="clerkMount"></div></div>
     <div id="clerkErrorPane" class="hidden"><div class="safety danger"><strong>Koppeling mislukt.</strong> <span id="clerkErrorText"></span></div><button class="btn secondary" id="resetClerkKeyBtn" style="margin-top:12px">Publishable Key opnieuw instellen</button></div>
   </div>
@@ -286,7 +286,7 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 
 <script>
 'use strict';
-const APP_VERSION='2.0.1-dev';
+const APP_VERSION='2.0.2-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -631,7 +631,12 @@ async function syncClerkUser(){
       startCentralSync();
       if(currentUser.role==='admin')setTimeout(()=>refreshCentralMeta({silent:true}),250);
       if(firstConnection)toast('Centrale database verbonden');
-    }else if(CENTRAL_REQUIRED&&!centralMode){
+    }else if(!centralMode){
+      rebuildRows();
+      backfillAuditMetadata();
+      fillOptions();
+    }
+    if(CENTRAL_REQUIRED&&!connected&&!centralMode){
       // Alleen waarschuwen wanneer er nog nooit een centrale verbinding is geweest.
       // Een losse tijdelijke Clerk-event mag geen vals databasealarm tonen.
       toast('Centrale database niet bereikbaar. Wijzigingen zijn tijdelijk geblokkeerd.','bad');
@@ -640,6 +645,7 @@ async function syncClerkUser(){
     $('loginScreen').classList.add('hidden');
     applyRoleUI();
     renderAll();
+    generateTest();
     mountClerkUserButton();
     console.info('Clerk rolcontrole',{metadataRole,crole,appRole:currentUser.role,centralMode});
     return true;
@@ -661,7 +667,7 @@ async function resetDatabase(){if(useCentralWrites())return toast('Centrale data
 function updateStorageInfo(){try{const bytes=new Blob([localStorage.getItem(STATE_KEY)||'']).size;$('storageInfo').textContent=centralMode?`Centrale database actief · lokale voorkeuren ${(bytes/1024).toFixed(1)} KB`:`Lokale modus · compact opgeslagen ${(bytes/1024).toFixed(1)} KB`}catch{}}
 function renderAll(){renderDashboard();renderSettings();renderMaterials();renderFavorites();renderAdmin();renderUsers();renderApprovalQueue();renderUserStats();renderAdminPendingBadge();renderSystemHealth();applyRoleUI()}
 // Events
-rebuildRows();backfillAuditMetadata();fillOptions();generateTest();renderAll();initClerkAuth();
+initClerkAuth();
 document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));document.querySelectorAll('[data-viewjump]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.viewjump)));document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.close;if(id==='confirmBackdrop')finishConfirm(false);else closeModal(id)}));document.querySelectorAll('.modalBackdrop').forEach(b=>b.addEventListener('click',e=>{if(e.target===b){if(b.id==='confirmBackdrop')finishConfirm(false);else closeModal(b.id)}}));
 $('confirmOk').onclick=()=>{if(!$('confirmTypeWrap').classList.contains('hidden')&&$('confirmType').value!=='VERWIJDER')return toast('Typ exact VERWIJDER om verder te gaan.','bad');finishConfirm(true)};
 $('refreshUsersBtn').onclick=()=>refreshCentralMeta();$('saveUserBtn').onclick=saveUser;$('historyCsvBtn').onclick=exportCentralHistoryCsv;$('historyRefreshBtn').onclick=()=>refreshCentralMeta();$('historySearch').oninput=renderHistory;$('historyTypeFilter').onchange=renderHistory;$('centralBackupBtn').onclick=exportCentralBackup;$('copySystemReportBtn').onclick=copySystemReport;$('mobileMenu').onclick=()=>$('sidebar').classList.toggle('open');$('lockBtn').onclick=logout;$('helpBtn').onclick=()=>openModal('helpBackdrop');$('saveClerkKeyBtn').onclick=()=>{const key=$('clerkKeyInput').value.trim();if(!key.startsWith('pk_'))return toast('Gebruik de Clerk Publishable Key die met pk_ begint.','bad');localStorage.setItem(CLERK_KEY_STORAGE,key);document.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content',key);toast('Clerk gekoppeld. index.html wordt aangemaakt.');setTimeout(downloadPortable,150)};$('resetClerkKeyBtn').onclick=()=>{localStorage.removeItem(CLERK_KEY_STORAGE);document.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content','');location.reload()};
