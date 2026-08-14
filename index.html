@@ -281,12 +281,12 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 <div class="modalBackdrop hidden" id="confirmBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="confirmTitle">Bevestigen</h2><button class="modalClose" data-close="confirmBackdrop">×</button></div><div class="modalBody"><div class="confirmIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg></div><div id="confirmMessage" class="confirmText"></div><div class="field hidden" id="confirmTypeWrap"><label>Typ <span class="confirmCode">VERWIJDER</span></label><input id="confirmType" autocomplete="off" placeholder="VERWIJDER"></div></div><div class="modalFoot"><button class="btn secondary" data-close="confirmBackdrop">Annuleren</button><button class="btn danger" id="confirmOk">Bevestigen</button></div></div></div>
 <div class="modalBackdrop hidden" id="materialBackdrop"><div class="modal"><div class="modalHead"><h2>Materiaalprofiel</h2><button class="modalClose" data-close="materialBackdrop">×</button></div><div class="modalBody" id="materialDetail"></div></div></div>
 <div class="modalBackdrop hidden" id="userBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="userModalTitle">Gebruiker</h2><button class="modalClose" data-close="userBackdrop">×</button></div><div class="modalBody"><div class="field"><label>Naam</label><input id="userName" readonly></div><div class="field" style="margin-top:10px"><label>E-mail</label><input id="userEmail" type="email" readonly></div><div class="field" style="margin-top:10px"><label>Rol</label><select id="userRole"><option value="admin">Beheerder</option><option value="contributor">Bijdrager</option></select></div><div class="safety warn" style="margin-top:14px">Een rolwijziging wordt centraal in Clerk opgeslagen. De gebruiker krijgt de nieuwe rechten bij de volgende sessiecontrole.</div></div><div class="modalFoot"><button class="btn secondary" data-close="userBackdrop">Annuleren</button><button class="btn primary" id="saveUserBtn">Rol opslaan</button></div></div></div>
-<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> de 70 W-database blijft de relatieve materiaalbasis. De 10 W-, 20 W- en 40 W-startwaarden worden conservatief afgeleid en gekalibreerd aan officiële xTool- en Ortur-referenties. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Gebruik alle afgeleide waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
+<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> de 70 W-database blijft de relatieve materiaalbasis. De 10 W-, 20 W- en 40 W-startwaarden worden conservatief afgeleid en gekalibreerd aan officiële xTool- en Ortur-referenties. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. Afgeleide snijcurves worden bovendien gladgestreken zodat bij hetzelfde aantal passages een hoger vermogenspercentage niet plots een lagere snelheid krijgt. Gebruik alle afgeleide waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
 <div class="toastStack" id="toastStack"></div>
 
 <script>
 'use strict';
-const APP_VERSION='2.0.4-dev';
+const APP_VERSION='2.0.5-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -447,6 +447,58 @@ function expandSeedRows(seed){
       }
 
       out.push(nr);
+    }
+  }
+
+  /*
+    Professionele curve-correctie:
+    Binnen exact dezelfde combinatie van laservermogen, materiaal, dikte,
+    bewerking en aantal passes mag een hoger vermogenspercentage niet plots
+    een lagere snijsnelheid krijgen. Zulke dalingen komen uit kleine
+    onregelmatigheden in de oorspronkelijke 70 W-curve en zijn niet logisch
+    als snelle startreferentie.
+
+    We corrigeren alleen de afgeleide 10/20/40 W-snijwaarden.
+    Een overgang naar minder passes blijft ongemoeid, omdat daarbij bewust
+    een andere snelheid passend kan zijn.
+  */
+  for(const laserWatt of [10,20,40]){
+    const groups=new Map();
+
+    for(const r of out){
+      if(
+        Number(r.laserWatt)!==laserWatt ||
+        r.bewerking!=='Snijden' ||
+        r.snelheid==='' ||
+        r.passes==='' ||
+        !Number.isFinite(Number(r.snelheid)) ||
+        !Number.isFinite(Number(r.passes))
+      ) continue;
+
+      const key=[
+        laserWatt,
+        txt(r.materiaal),
+        txt(r.dikte),
+        Number(r.passes)
+      ].join('|');
+
+      if(!groups.has(key)) groups.set(key,[]);
+      groups.get(key).push(r);
+    }
+
+    for(const group of groups.values()){
+      group.sort((a,b)=>Number(a.vermogen)-Number(b.vermogen));
+
+      let previousSpeed=0;
+      for(const r of group){
+        const currentSpeed=Number(r.snelheid);
+        if(currentSpeed<previousSpeed){
+          r.snelheid=previousSpeed;
+          r.opmerking=`Curve gecorrigeerd: bij hetzelfde aantal passages is de snelheid niet lager gezet dan bij een lager vermogenspercentage. ${txt(r.opmerking)}`.trim();
+        }else{
+          previousSpeed=currentSpeed;
+        }
+      }
     }
   }
 
