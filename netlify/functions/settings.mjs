@@ -27,7 +27,7 @@ const AUTHORIZED_PARTIES = [
   "https://development--laser-settings-manager.netlify.app",
 ];
 
-const MAX_JSON_BODY_BYTES = 64 * 1024;
+const MAX_JSON_BODY_BYTES = 128 * 1024;
 
 function requestSourceAllowed(request) {
   const origin = request.headers.get("origin");
@@ -166,6 +166,87 @@ function json(data, status = 200) {
 
 function shortText(value, max) {
   return String(value ?? "").trim().slice(0, max);
+}
+
+const PROFILE_LANGS = ["nl", "en", "fr", "de"];
+const PROFILE_VISUAL_MODES = new Set(["", "url", "upload", "ral", "transparent"]);
+const PROFILE_SAFETY_LEVELS = new Set(["", "ok", "warn", "danger"]);
+
+function safeColor(value, fallback = "") {
+  const s = shortText(value, 20);
+  return /^#[0-9a-f]{6}$/i.test(s) ? s.toLowerCase() : fallback;
+}
+
+function cleanProfileTranslations(input = {}) {
+  const result = {};
+  for (const lang of PROFILE_LANGS) {
+    const item = input?.[lang] && typeof input[lang] === "object" ? input[lang] : {};
+    result[lang] = {
+      name: shortText(item.name, 180),
+      description: shortText(item.description, 3000),
+      safetyText: shortText(item.safetyText, 4000),
+    };
+  }
+  return result;
+}
+
+function cleanMaterialProfile(input = {}) {
+  const visualMode = PROFILE_VISUAL_MODES.has(String(input.visualMode || ""))
+    ? String(input.visualMode || "")
+    : "";
+
+  const safetyLevel = PROFILE_SAFETY_LEVELS.has(String(input.safetyLevel || ""))
+    ? String(input.safetyLevel || "")
+    : "";
+
+  let image = shortText(input.image, 60000);
+  if (image && !/^https?:\/\//i.test(image) && !/^data:image\//i.test(image)) {
+    image = "";
+  }
+
+  return {
+    categoryKey: shortText(input.categoryKey, 180),
+    category: shortText(input.category, 180),
+    safetyLevel,
+    visualMode,
+    image,
+    ralCode: shortText(input.ralCode, 30),
+    ralHex: safeColor(input.ralHex),
+    transparentTint: safeColor(input.transparentTint),
+    transparentOpacity:
+      Number.isFinite(Number(input.transparentOpacity))
+        ? Math.max(0.1, Math.min(0.9, Number(input.transparentOpacity)))
+        : "",
+    translations: cleanProfileTranslations(input.translations),
+  };
+}
+
+function cleanCustomCategory(input = {}) {
+  const id = shortText(input.id, 180);
+  if (!validId(id)) return null;
+
+  const translations = {};
+  for (const lang of PROFILE_LANGS) {
+    translations[lang] = shortText(input?.translations?.[lang], 180);
+  }
+
+  if (!PROFILE_LANGS.every((lang) => translations[lang])) return null;
+
+  return {
+    id,
+    createdAt: shortText(input.createdAt, 60) || new Date().toISOString(),
+    translations,
+  };
+}
+
+function profileBlobKey(material) {
+  const safe = shortText(material, 180);
+  if (!safe) return "";
+  return `material-profiles/${Buffer.from(safe, "utf8").toString("base64url")}`;
+}
+
+function categoryBlobKey(id) {
+  return `material-categories/${id}`;
 }
 
 function cleanSetting(input = {}) {
@@ -411,6 +492,129 @@ async function loadCentralPatch(user) {
   ).length;
 
   return { upserts, deleted, pendingCount, rawUpserts: upsertsRaw };
+}
+
+
+
+async function loadMaterialProfiles() {
+  const listing = await listBlobsResilient("material-profiles/", "list material profiles");
+  const entries = (
+    await Promise.all(
+      listing.blobs.map((item) => getBlobResilient(item.key, "json"))
+    )
+  ).filter(Boolean);
+
+  const result = {};
+  for (const entry of entries) {
+    const material = shortText(entry.material, 180);
+    if (!material) continue;
+    result[material] = cleanMaterialProfile(entry.profile || {});
+  }
+  return result;
+}
+
+async function loadCustomCategories() {
+  const listing = await listBlobsResilient("material-categories/", "list material categories");
+  const entries = (
+    await Promise.all(
+      listing.blobs.map((item) => getBlobResilient(item.key, "json"))
+    )
+  ).filter(Boolean);
+
+  const result = {};
+  for (const entry of entries) {
+    const category = cleanCustomCategory(entry.category || entry);
+    if (!category) continue;
+    result[category.id] = category;
+  }
+  return result;
+}
+
+async function saveMaterialProfile(body, user) {
+  const material = shortText(body.material, 180);
+  if (!material) {
+    return json({ success: false, error: "Materiaalnaam ontbreekt." }, 400);
+  }
+
+  const key = profileBlobKey(material);
+  const existing = await getBlobResilient(key, "json").catch(() => null);
+
+  // Contributors may create metadata for a genuinely new material, but they
+  // cannot overwrite an existing shared profile.
+  if (existing && user.role !== "admin") {
+    return json(
+      { success: false, error: "Alleen een Beheerder kan een bestaand materiaalprofiel wijzigen." },
+      403
+    );
+  }
+
+  const profile = cleanMaterialProfile(body.profile || {});
+  const stored = {
+    material,
+    profile,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  };
+
+  await primaryStore().setJSON(key, stored);
+
+  await addHistoryEntry({
+    type: existing ? "material_profile_edit" : "material_profile_add",
+    label: `${existing ? "Materiaalprofiel gewijzigd" : "Materiaalprofiel toegevoegd"}: ${material}`,
+    user,
+    rowId: "",
+    before: existing?.profile || null,
+    after: profile,
+    restorable: false,
+  });
+
+  return json({
+    success: true,
+    action: "save-material-profile",
+    material,
+    profile,
+  });
+}
+
+async function saveCustomCategory(body, user) {
+  if (user.role !== "admin") {
+    return json(
+      { success: false, error: "Alleen een Beheerder kan materiaalcategorieën beheren." },
+      403
+    );
+  }
+
+  const category = cleanCustomCategory(body.category || {});
+  if (!category) {
+    return json({ success: false, error: "Ongeldige materiaalcategorie." }, 400);
+  }
+
+  const key = categoryBlobKey(category.id);
+  const existing = await getBlobResilient(key, "json").catch(() => null);
+
+  await primaryStore().setJSON(key, {
+    category,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  });
+
+  await addHistoryEntry({
+    type: existing ? "material_category_edit" : "material_category_add",
+    label: `${existing ? "Materiaalcategorie gewijzigd" : "Materiaalcategorie toegevoegd"}: ${category.translations.nl}`,
+    user,
+    rowId: "",
+    before: existing?.category || null,
+    after: category,
+    restorable: false,
+  });
+
+  return json({
+    success: true,
+    action: "save-custom-category",
+    category,
+  });
 }
 
 
@@ -828,6 +1032,10 @@ async function handlePatch(request, user) {
       return deleteUser(body.userId, body.confirmation, user);
     case "restore-history":
       return restoreHistory(body.historyId, user);
+    case "save-material-profile":
+      return saveMaterialProfile(body, user);
+    case "save-custom-category":
+      return saveCustomCategory(body, user);
     default:
       return json({ success: false, error: "Onbekende beheeractie." }, 400);
   }
@@ -851,14 +1059,21 @@ export default async (request) => {
     const url = new URL(request.url);
 
     if (request.method === "GET") {
-      const patch = await loadCentralPatch(user);
-      const recentHistory = (await historyEntries(5)).map(historySummary);
+      const [patch, recentHistoryRaw, materialProfiles, customCategories] = await Promise.all([
+        loadCentralPatch(user),
+        historyEntries(5),
+        loadMaterialProfiles(),
+        loadCustomCategories(),
+      ]);
+      const recentHistory = recentHistoryRaw.map(historySummary);
 
       const result = {
         success: true,
-        version: 9,
+        version: 10,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
+        materialProfiles,
+        customCategories,
         pendingCount: patch.pendingCount,
         recentHistory,
       };
