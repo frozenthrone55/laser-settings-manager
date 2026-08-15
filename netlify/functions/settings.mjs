@@ -185,6 +185,7 @@ function cleanProfileTranslations(input = {}) {
       name: shortText(item.name, 180),
       description: shortText(item.description, 3000),
       safetyText: shortText(item.safetyText, 4000),
+      notes: shortText(item.notes, 4000),
     };
   }
   return result;
@@ -207,6 +208,14 @@ function cleanMaterialProfile(input = {}) {
   return {
     categoryKey: shortText(input.categoryKey, 180),
     category: shortText(input.category, 180),
+    manufacturer: shortText(input.manufacturer, 200),
+    supplier: shortText(input.supplier, 200),
+    internalCode: shortText(input.internalCode, 120),
+    datasheetUrl: /^https?:\/\//i.test(shortText(input.datasheetUrl, 1200)) ? shortText(input.datasheetUrl, 1200) : "",
+    materialColor: safeColor(input.materialColor),
+    transparency: ["", "opaque", "translucent", "transparent"].includes(String(input.transparency || "")) ? String(input.transparency || "") : "",
+    suitability: ["", "both", "cut", "engrave"].includes(String(input.suitability || "")) ? String(input.suitability || "") : "",
+    defaultAirAssist: shortText(input.defaultAirAssist, 180),
     safetyLevel,
     visualMode,
     image,
@@ -247,6 +256,70 @@ function profileBlobKey(material) {
 
 function categoryBlobKey(id) {
   return `material-categories/${id}`;
+}
+
+const BUILTIN_LASER_PROFILES = [10, 20, 40, 70];
+const MATERIAL_RENAMES_KEY = "config/material-renames";
+const LASER_PROFILES_KEY = "config/laser-profiles";
+
+function cleanMaterialRenames(input = {}) {
+  const result = {};
+  for (const [fromRaw, toRaw] of Object.entries(input || {})) {
+    const from = shortText(fromRaw, 180);
+    const to = shortText(toRaw, 180);
+    if (from && to && from !== to) result[from] = to;
+  }
+  return result;
+}
+
+function resolveMaterialRename(value, renames = {}) {
+  let current = shortText(value, 180);
+  const seen = new Set();
+  for (let i = 0; i < 30 && renames[current] && !seen.has(current); i += 1) {
+    seen.add(current);
+    current = shortText(renames[current], 180);
+  }
+  return current;
+}
+
+async function loadMaterialRenames() {
+  const entry = await getBlobResilient(MATERIAL_RENAMES_KEY, "json").catch(() => null);
+  return cleanMaterialRenames(entry?.renames || entry || {});
+}
+
+async function saveMaterialRenames(renames, user) {
+  const clean = cleanMaterialRenames(renames);
+  await primaryStore().setJSON(MATERIAL_RENAMES_KEY, {
+    renames: clean,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  });
+  return clean;
+}
+
+function cleanLaserProfiles(values) {
+  const custom = (Array.isArray(values) ? values : [])
+    .map(Number)
+    .filter((v) => Number.isFinite(v) && v >= 1 && v <= 200)
+    .map((v) => Math.round(v * 10) / 10);
+  return [...new Set([...BUILTIN_LASER_PROFILES, ...custom])].sort((a, b) => a - b);
+}
+
+async function loadLaserProfiles() {
+  const entry = await getBlobResilient(LASER_PROFILES_KEY, "json").catch(() => null);
+  return cleanLaserProfiles(entry?.profiles || []);
+}
+
+async function saveLaserProfiles(profiles, user) {
+  const clean = cleanLaserProfiles(profiles);
+  await primaryStore().setJSON(LASER_PROFILES_KEY, {
+    profiles: clean,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  });
+  return clean;
 }
 
 function cleanSetting(input = {}) {
@@ -766,6 +839,12 @@ async function saveCustomCategory(body, user) {
   const duplicate = findExistingCategoryByTranslations(category, categories, category.id);
 
   if (duplicate) {
+    if (categories[category.id]) {
+      return json({
+        success: false,
+        error: "Deze vertaling hoort al bij een andere categorie. Gebruik Samenvoegen.",
+      }, 409);
+    }
     return json({
       success: true,
       action: "save-custom-category",
@@ -803,6 +882,142 @@ async function saveCustomCategory(body, user) {
   });
 }
 
+
+function mergeProfileTranslations(source = {}, target = {}, targetNames = null) {
+  const result = {};
+  for (const lang of PROFILE_LANGS) {
+    const s = source?.[lang] || {};
+    const t = target?.[lang] || {};
+    result[lang] = {
+      name: shortText(targetNames?.[lang] || t.name || s.name, 180),
+      description: shortText(t.description || s.description, 3000),
+      safetyText: shortText(t.safetyText || s.safetyText, 4000),
+      notes: shortText(t.notes || s.notes, 4000),
+    };
+  }
+  return result;
+}
+
+function mergeMaterialProfiles(source = {}, target = {}, targetNames = null) {
+  const s = cleanMaterialProfile(source || {});
+  const t = cleanMaterialProfile(target || {});
+  const merged = { ...s, ...t };
+  for (const key of ["categoryKey","category","manufacturer","supplier","internalCode","datasheetUrl","materialColor","transparency","suitability","defaultAirAssist","safetyLevel","visualMode","image","ralCode","ralHex","transparentTint","transparentOpacity"]) {
+    merged[key] = t[key] || s[key] || "";
+  }
+  merged.suitability = t.suitability || s.suitability || "";
+  merged.translations = mergeProfileTranslations(s.translations, t.translations, targetNames);
+  return cleanMaterialProfile(merged);
+}
+
+async function renameOrMergeMaterial(body, user) {
+  if (user.role !== "admin") return json({ success:false,error:"Alleen een Beheerder kan materialen hernoemen of samenvoegen." },403);
+  const source = shortText(body.source, 180);
+  const target = shortText(body.target, 180);
+  const mode = body.mode === "merge" ? "merge" : "rename";
+  if (!source || !target) return json({ success:false,error:"Bron- en doelmateriaal zijn verplicht." },400);
+  if (source === target) return json({ success:false,error:"Bron- en doelmateriaal zijn gelijk." },400);
+
+  const renames = await loadMaterialRenames();
+  const resolvedSource = resolveMaterialRename(source, renames);
+  const resolvedTarget = resolveMaterialRename(target, renames);
+  if (resolvedSource === resolvedTarget) return json({ success:false,error:"Deze materialen zijn al samengevoegd." },400);
+
+  // Prevent rename cycles.
+  if (resolveMaterialRename(resolvedTarget, { ...renames, [resolvedSource]: resolvedTarget }) === resolvedSource) {
+    return json({ success:false,error:"Deze hernoeming zou een kringverwijzing veroorzaken." },400);
+  }
+
+  const profiles = await loadMaterialProfiles();
+  const sourceProfile = profiles[resolvedSource] || {};
+  const targetProfile = profiles[resolvedTarget] || {};
+  const targetNames = body.targetTranslations && typeof body.targetTranslations === "object" ? body.targetTranslations : null;
+  const mergedProfile = mergeMaterialProfiles(sourceProfile, targetProfile, mode === "rename" ? targetNames : null);
+
+  await primaryStore().setJSON(profileBlobKey(resolvedTarget), {
+    material: resolvedTarget,
+    profile: mergedProfile,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  });
+  if (resolvedSource !== resolvedTarget) await primaryStore().delete(profileBlobKey(resolvedSource));
+
+  // Rewrite central custom/override rows so newly stored data is canonical too.
+  const upsertListing = await listBlobsResilient("upserts/", "list upserts for material rename");
+  let rewritten = 0;
+  for (const entry of upsertListing.blobs) {
+    const row = await getBlobResilient(entry.key, "json");
+    if (!row) continue;
+    const canonical = resolveMaterialRename(row.materiaal, renames);
+    if (canonical !== resolvedSource) continue;
+    await primaryStore().setJSON(entry.key, { ...row, materiaal: resolvedTarget, updatedAt:new Date().toISOString(), updatedById:user.id, updatedByName:user.name, updatedByEmail:user.email });
+    rewritten += 1;
+  }
+
+  // Flatten existing aliases that pointed at the source and add the source mapping.
+  const nextRenames = { ...renames, [resolvedSource]: resolvedTarget };
+  for (const key of Object.keys(nextRenames)) {
+    const resolved = resolveMaterialRename(nextRenames[key], nextRenames);
+    if (resolved && resolved !== key) nextRenames[key] = resolved;
+  }
+  const savedRenames = await saveMaterialRenames(nextRenames, user);
+
+  await addHistoryEntry({
+    type: mode === "merge" ? "material_merge" : "material_rename",
+    label: `${mode === "merge" ? "Materialen samengevoegd" : "Materiaal hernoemd"}: ${resolvedSource} → ${resolvedTarget}`,
+    user,rowId:"",before:{source:resolvedSource},after:{target:resolvedTarget,rewritten},restorable:false,
+  });
+
+  return json({ success:true,action:"rename-material",mode,source:resolvedSource,target:resolvedTarget,rewritten,materialRenames:savedRenames,profile:mergedProfile });
+}
+
+async function mergeCustomCategory(body, user) {
+  if (user.role !== "admin") return json({success:false,error:"Alleen een Beheerder kan categorieën samenvoegen."},403);
+  const source=shortText(body.source,180),target=shortText(body.target,180);
+  if (!source || !target || source===target) return json({success:false,error:"Ongeldige bron- of doelcategorie."},400);
+  if (source.startsWith("builtin:")) return json({success:false,error:"Een ingebouwde categorie kan niet worden verwijderd."},400);
+  const categories=await loadCustomCategories();
+  if (!categories[source]) return json({success:false,error:"Broncategorie niet gevonden."},404);
+  if (!target.startsWith("builtin:") && !categories[target]) return json({success:false,error:"Doelcategorie niet gevonden."},404);
+  const profiles=await loadMaterialProfiles(); let changed=0;
+  for (const [material,profile] of Object.entries(profiles)) {
+    if (profile.categoryKey!==source) continue;
+    const updated=cleanMaterialProfile({...profile,categoryKey:target,category:""});
+    await primaryStore().setJSON(profileBlobKey(material),{material,profile:updated,updatedAt:new Date().toISOString(),updatedById:user.id,updatedByName:user.name}); changed += 1;
+  }
+  await primaryStore().delete(categoryBlobKey(source));
+  await addHistoryEntry({type:"material_category_merge",label:`Materiaalcategorie samengevoegd: ${categories[source].translations.nl} → ${target}`,user,rowId:"",before:source,after:target,restorable:false});
+  return json({success:true,action:"merge-custom-category",source,target,changed});
+}
+
+async function deleteCustomCategory(body,user){
+  if(user.role!=="admin")return json({success:false,error:"Alleen een Beheerder kan categorieën verwijderen."},403);
+  const id=shortText(body.id,180); if(!id||id.startsWith("builtin:"))return json({success:false,error:"Ongeldige of beschermde categorie."},400);
+  const categories=await loadCustomCategories(); if(!categories[id])return json({success:false,error:"Categorie niet gevonden."},404);
+  const profiles=await loadMaterialProfiles(); if(Object.values(profiles).some(p=>p.categoryKey===id))return json({success:false,error:"Deze categorie is nog in gebruik."},409);
+  await primaryStore().delete(categoryBlobKey(id));
+  await addHistoryEntry({type:"material_category_delete",label:`Materiaalcategorie verwijderd: ${categories[id].translations.nl}`,user,rowId:"",before:categories[id],after:null,restorable:false});
+  return json({success:true,action:"delete-custom-category",id});
+}
+
+async function addLaserProfile(body,user){
+  if(user.role!=="admin")return json({success:false,error:"Alleen een Beheerder kan laserprofielen beheren."},403);
+  const watt=Math.round(Number(body.watt)*10)/10; if(!Number.isFinite(watt)||watt<1||watt>200)return json({success:false,error:"Laservermogen moet tussen 1 en 200 W liggen."},400);
+  const profiles=await loadLaserProfiles(); if(profiles.includes(watt))return json({success:true,action:"add-laser-profile",laserProfiles:profiles,existing:true});
+  const next=await saveLaserProfiles([...profiles,watt],user);
+  await addHistoryEntry({type:"laser_profile_add",label:`Laserprofiel toegevoegd: ${watt} W`,user,rowId:"",before:null,after:watt,restorable:false});
+  return json({success:true,action:"add-laser-profile",laserProfiles:next});
+}
+
+async function removeLaserProfile(body,user){
+  if(user.role!=="admin")return json({success:false,error:"Alleen een Beheerder kan laserprofielen beheren."},403);
+  const watt=Math.round(Number(body.watt)*10)/10; if(BUILTIN_LASER_PROFILES.includes(watt))return json({success:false,error:"Een ingebouwd laserprofiel kan niet worden verwijderd."},400);
+  const patch=await loadCentralPatch(user); if(patch.rawUpserts.some(r=>Number(r.laserWatt)===watt))return json({success:false,error:"Dit laserprofiel wordt nog gebruikt door instellingen."},409);
+  const profiles=await loadLaserProfiles(); const next=await saveLaserProfiles(profiles.filter(v=>Number(v)!==watt),user);
+  await addHistoryEntry({type:"laser_profile_delete",label:`Laserprofiel verwijderd: ${watt} W`,user,rowId:"",before:watt,after:null,restorable:false});
+  return json({success:true,action:"remove-laser-profile",laserProfiles:next});
+}
 
 function buildUserStats(users, rawRows, deletedIds, history) {
   const deleted = new Set(deletedIds || []);
@@ -1224,6 +1439,16 @@ async function handlePatch(request, user) {
       return saveCustomCategory(body, user);
     case "deduplicate-custom-categories":
       return deduplicateCustomCategories(user);
+    case "rename-material":
+      return renameOrMergeMaterial(body, user);
+    case "merge-custom-category":
+      return mergeCustomCategory(body, user);
+    case "delete-custom-category":
+      return deleteCustomCategory(body, user);
+    case "add-laser-profile":
+      return addLaserProfile(body, user);
+    case "remove-laser-profile":
+      return removeLaserProfile(body, user);
     default:
       return json({ success: false, error: "Onbekende beheeractie." }, 400);
   }
@@ -1247,21 +1472,25 @@ export default async (request) => {
     const url = new URL(request.url);
 
     if (request.method === "GET") {
-      const [patch, recentHistoryRaw, materialProfiles, customCategories] = await Promise.all([
+      const [patch, recentHistoryRaw, materialProfiles, customCategories, materialRenames, laserProfiles] = await Promise.all([
         loadCentralPatch(user),
         historyEntries(5),
         loadMaterialProfiles(),
         loadCustomCategories(),
+        loadMaterialRenames(),
+        loadLaserProfiles(),
       ]);
       const recentHistory = recentHistoryRaw.map(historySummary);
 
       const result = {
         success: true,
-        version: 11,
+        version: 12,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         materialProfiles,
         customCategories,
+        materialRenames,
+        laserProfiles,
         pendingCount: patch.pendingCount,
         recentHistory,
       };
