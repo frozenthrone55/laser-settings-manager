@@ -337,12 +337,12 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 <div class="modalBackdrop hidden" id="confirmBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="confirmTitle">Bevestigen</h2><button class="modalClose" data-close="confirmBackdrop">×</button></div><div class="modalBody"><div class="confirmIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg></div><div id="confirmMessage" class="confirmText"></div><div class="field hidden" id="confirmTypeWrap"><label>Typ <span class="confirmCode">VERWIJDER</span></label><input id="confirmType" autocomplete="off" placeholder="VERWIJDER"></div></div><div class="modalFoot"><button class="btn secondary" data-close="confirmBackdrop">Annuleren</button><button class="btn danger" id="confirmOk">Bevestigen</button></div></div></div>
 <div class="modalBackdrop hidden" id="materialBackdrop"><div class="modal"><div class="modalHead"><h2>Materiaalprofiel</h2><button class="modalClose" data-close="materialBackdrop">×</button></div><div class="modalBody" id="materialDetail"></div></div></div>
 <div class="modalBackdrop hidden" id="userBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="userModalTitle">Gebruiker</h2><button class="modalClose" data-close="userBackdrop">×</button></div><div class="modalBody"><div class="field"><label>Naam</label><input id="userName" readonly></div><div class="field" style="margin-top:10px"><label>E-mail</label><input id="userEmail" type="email" readonly></div><div class="field" style="margin-top:10px"><label>Rol</label><select id="userRole"><option value="admin">Beheerder</option><option value="contributor">Bijdrager</option></select></div><div class="safety warn" style="margin-top:14px">Een rolwijziging wordt centraal in Clerk opgeslagen. De gebruiker krijgt de nieuwe rechten bij de volgende sessiecontrole.</div></div><div class="modalFoot"><button class="btn secondary" data-close="userBackdrop">Annuleren</button><button class="btn primary" id="saveUserBtn">Rol opslaan</button></div></div></div>
-<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm en 20 W / 6 mm plaatmateriaal worden officiële xTool-referenties als minimale energie-ankers gebruikt. 8 mm wordt conservatief vanuit die ankers geëxtrapoleerd en alleen aangeboden wanneer dit binnen de praktische passlimiet blijft. Voor 40 W / 12 mm wordt per houtsoort de eigen 8 mm-curve gebruikt en de diktegroei gekalibreerd tussen officiële xTool 40 W-referenties voor 8 en 15 mm basswood plywood. 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. De afgeleide snijcurves worden daarna automatisch gecontroleerd: bij hoger vermogen mag het aantal passages niet opnieuw toenemen, de totale snijtijd mag bij een overgang naar minder passages niet verslechteren en binnen hetzelfde aantal passages mag de snelheid niet terugvallen. Een snijrij met een geldige snelheid én geldig aantal passes wordt als Startwaarde behandeld; alleen rijen zonder bruikbare snijparameters blijven Niet aanbevolen. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Talen:</strong> de interface ondersteunt Nederlands, English, Français en Deutsch. De taalkeuze wordt per browser onthouden. Ingebouwde materiaalnamen, statussen, veiligheidsmeldingen en standaardnotities worden vertaald voor weergave; vrije notities die gebruikers zelf invoeren blijven in de taal waarin ze zijn geschreven.</p><p><strong>Zoeken:</strong> de globale zoekbalk zoekt live in alle vier talen en wist oude filters automatisch. Zo kun je bijvoorbeeld zoeken op Berk, Birch, Bouleau of Birke zonder dat een eerder gekozen wattage, dikte of status de resultaten blokkeert.</p><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
+<div class="modalBackdrop hidden" id="helpBackdrop"><div class="modal"><div class="modalHead"><h2>Gebruik &amp; veiligheid</h2><button class="modalClose" data-close="helpBackdrop">×</button></div><div class="modalBody"><p><strong>Startwaarden zijn geen garanties.</strong> Materiaalbatch, vocht, lijmlagen, lens, focus, air assist, spotgrootte en machinekalibratie veranderen het resultaat.</p><p><strong>Materiaalberekening:</strong> Acacia 70 W is de hoofdreferentie. Elke andere houtsoort en elk plaatmateriaal wordt per bewerking, dikte en vermogensstap aan de overeenkomstige Acacia-masterrij gekoppeld. Uit de reeds aanwezige 70 W-materiaaldata wordt vervolgens een eigen materiaalfactor berekend, zodat niet alle houtsoorten dezelfde waarden krijgen.</p><p><strong>Laserprofielen 10/20/40/70 W:</strong> na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm en 20 W / 6 mm plaatmateriaal worden officiële xTool-referenties als minimale energie-ankers gebruikt. 8 mm wordt conservatief vanuit die ankers geëxtrapoleerd en alleen aangeboden wanneer dit binnen de praktische passlimiet blijft. Voor 40 W / 12 mm wordt per houtsoort de eigen 8 mm-curve gebruikt en de diktegroei gekalibreerd tussen officiële xTool 40 W-referenties voor 8 en 15 mm basswood plywood. 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als <strong>Niet aanbevolen</strong> gemarkeerd. De afgeleide snijcurves worden daarna automatisch gecontroleerd: bij hoger vermogen mag het aantal passages niet opnieuw toenemen, de totale snijtijd mag bij een overgang naar minder passages niet verslechteren en binnen hetzelfde aantal passages mag de snelheid niet terugvallen. Een snijrij met een geldige snelheid én geldig aantal passes wordt als Startwaarde behandeld; alleen rijen zonder bruikbare snijparameters blijven Niet aanbevolen. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.</p><div class="safety warn"><strong>Altijd eerst testen.</strong> Gebruik de materiaaltest om een startwaarde rond je eigen machine te verfijnen en markeer pas daarna een instelling als Getest.</div><p><strong>Talen:</strong> de interface ondersteunt Nederlands, English, Français en Deutsch. De taalkeuze wordt per browser onthouden. Ingebouwde materiaalnamen, statussen, veiligheidsmeldingen en standaardnotities worden vertaald voor weergave; vrije notities die gebruikers zelf invoeren blijven in de taal waarin ze zijn geschreven.</p><p><strong>Zoeken:</strong> druk op Enter of klik op het vergrootglas. Materiaalnamen zijn doorzoekbaar in NL, EN, FR en DE, bijvoorbeeld Berken, Birch, Bouleau of Birke.</p><p><strong>Online rollen:</strong> Beheerder kan alles beheren, bestaande waarden wijzigen en verwijderen. Bijdragers mogen zichzelf registreren en alleen nieuwe waarden toevoegen, dupliceren, materiaaltests opslaan en favorieten gebruiken. Ze kunnen bestaande waarden niet wijzigen of verwijderen.</p><p><strong>Belangrijk:</strong> Clerk beheert de accounts en e-mailverificatie. Op de online Netlify-versie worden toevoegingen, wijzigingen en verwijderingen centraal gesynchroniseerd via de beveiligde database. Favorieten, recente items en de lokale actielijst blijven persoonlijk per browser.</p></div></div></div>
 <div class="toastStack" id="toastStack"></div>
 
 <script>
 'use strict';
-const APP_VERSION='2.2.1-dev';
+const APP_VERSION='2.2.2-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -1472,20 +1472,18 @@ function normalizeSearchText(value){
     .replace(/[\u0300-\u036f]/g,'')
     .replace(/ß/g,'ss')
     .toLowerCase()
-    .replace(/[’‘`´]/g,"'")
     .replace(/\s+/g,' ')
     .trim();
 }
 function smartParsed(q){
-  const raw=txt(q).trim();
-  const normalized=normalizeSearchText(raw);
-  const mm=normalized.match(/(\d+(?:[.,]\d+)?)\s*mm/i);
-  const pct=normalized.match(/(\d+)\s*%/);
+  const raw=normalizeSearchText(q);
+  const mm=raw.match(/(\d+(?:[.,]\d+)?)\s*mm/i);
+  const pct=raw.match(/(\d+)\s*%/);
   let op='';
-  if(/snij|cut|coupe|schneid/.test(normalized))op='Snijden';
-  else if(/grav|engr/.test(normalized))op='Graveren';
+  if(/snij|cut|coupe|schneid/.test(raw))op='Snijden';
+  else if(/grav|engr/.test(raw))op='Graveren';
 
-  let rest=normalized
+  let rest=raw
     .replace(/\d+(?:[.,]\d+)?\s*mm/ig,' ')
     .replace(/\d+\s*%/g,' ')
     .replace(/snijden?|snij|cut(?:ting)?|coupe|schneiden?|schneid(?:en)?|graveren?|gravure|gravier(?:en)?|engrave|engraving/ig,' ')
@@ -1532,6 +1530,49 @@ function activeFilters(){return ['filterSearch','filterLaserWatt','filterThickne
 function fillOptions(){const mats=unique('materiaal');$('materialDatalist').innerHTML=mats.map(v=>`<option value="${esc(v)}"></option>`).join('');$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');$('filterOperation').innerHTML='<option value="">Alle</option>'+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('')}
 function num(v,unit=''){if(v===''||v===null||v===undefined)return '<span style="color:#9aa5b5">—</span>';return `${Number(v).toLocaleString(currentLocale(),{maximumFractionDigits:1})}${unit}`}
 function renderSettings(){const data=filteredRows(),ps=Number($('pageSize').value)||100,pages=Math.max(1,Math.ceil(data.length/ps));if(currentPage>pages)currentPage=pages;const start=(currentPage-1)*ps,shown=data.slice(start,start+ps);$('resultCount').textContent=`${data.length.toLocaleString(currentLocale())} van ${rows.length.toLocaleString(currentLocale())} instellingen`;$('bulkDeleteBtn').disabled=!can('admin')||!activeFilters()||!data.length;$('bulkDeleteBtn').textContent=activeFilters()?`Bulk verwijderen (${data.length.toLocaleString(currentLocale())})`:'Bulk verwijderen';$('settingsBody').innerHTML=shown.length?shown.map(r=>`<tr><td><button class="star ${state.favorites.includes(r.id)?'on':''}" onclick="toggleFavorite('${r.id}')" title="Favoriet">★</button></td><td>${statusPill(r)}</td><td class="num"><strong>${Number(r.laserWatt)||70} W</strong></td><td><span class="pill ${r.bewerking==='Snijden'?'opCut':'opEngrave'}">${esc(r.bewerking)}</span></td><td><strong>${esc(r.materiaal)}</strong></td><td class="num">${r.dikte!==''?num(r.dikte,' mm'):'—'}</td><td class="num">${num(r.vermogen,'%')}</td><td class="num">${num(r.effectief,' W')}</td><td class="num">${r.snelheid!==''?num(r.snelheid,' mm/min'):'—'}</td><td class="num">${r.passes!==''?num(r.passes):'—'}</td><td>${relPill(r)}</td><td class="actions"><button class="btn secondary sm" onclick="openDetails('${r.id}')">Details</button>${can('edit')?` <button class="btn secondary sm" onclick="openEditor('${r.id}')">Wijzig</button>`:''}${can('admin')?` <button class="btn danger sm" onclick="deleteRow('${r.id}')">Verwijder</button>`:''}</td></tr>`).join(''):`<tr><td colspan="12" class="empty">Geen instellingen gevonden. Pas de filters aan.</td></tr>`;$('pageInfo').textContent=data.length?`Pagina ${currentPage} van ${pages} · ${start+1}–${Math.min(start+ps,data.length)}`:'Geen resultaten';$('prevPage').disabled=currentPage<=1;$('nextPage').disabled=currentPage>=pages}
+
+function toggleFavorite(id){
+  if(!id)return;
+  const i=state.favorites.indexOf(id);
+  if(i>=0)state.favorites.splice(i,1);
+  else state.favorites.push(id);
+
+  // Verwijder verwijzingen naar rijen die niet meer bestaan.
+  state.favorites=state.favorites.filter(fid=>rows.some(r=>r.id===fid));
+  saveState();
+
+  renderSettings();
+  renderFavorites();
+  renderDashboard();
+}
+function renderFavorites(){
+  const favRows=state.favorites
+    .map(id=>rows.find(r=>r.id===id))
+    .filter(Boolean)
+    .sort(sortRows);
+
+  const body=$('favoritesBody');
+  if(!body)return;
+
+  body.innerHTML=favRows.length
+    ?favRows.map(r=>`<tr>
+      <td><button class="star on" onclick="toggleFavorite('${r.id}')" title="Favoriet">★</button></td>
+      <td>${statusPill(r)}</td>
+      <td><span class="pill ${r.bewerking==='Snijden'?'opCut':'opEngrave'}">${esc(r.bewerking)}</span></td>
+      <td><strong>${esc(r.materiaal)}</strong><div class="rowSub">${Number(r.laserWatt)||70} W</div></td>
+      <td class="num">${r.dikte!==''?num(r.dikte,' mm'):'—'}</td>
+      <td class="num">${num(r.vermogen,'%')}</td>
+      <td class="num">${r.snelheid!==''?num(r.snelheid,' mm/min'):'—'}</td>
+      <td class="num">${r.passes!==''?num(r.passes):'—'}</td>
+      <td class="actions">
+        <button class="btn secondary sm" onclick="openDetails('${r.id}')">Details</button>
+        ${can('edit')?` <button class="btn secondary sm" onclick="openEditor('${r.id}')">Wijzig</button>`:''}
+        ${can('admin')?` <button class="btn danger sm" onclick="deleteRow('${r.id}')">Verwijder</button>`:''}
+      </td>
+    </tr>`).join('')
+    :'<tr><td colspan="9" class="empty">Nog geen favorieten. Klik op ★ bij een instelling.</td></tr>';
+}
+
 function renderDashboard(){const materials=unique('materiaal').length,tested=rows.filter(r=>r.tested&&r.approvalStatus!=='pending').length,notRec=rows.filter(r=>statusOf(r)==='Niet aanbevolen').length,favs=state.favorites.length;$('metrics').innerHTML=[['Instellingen',rows.length.toLocaleString(currentLocale()),'10/20/40/70 W samen'],['Materialen',materials.toLocaleString(currentLocale()),'Acacia-master + materiaalfactoren'],['Getest',tested.toLocaleString(currentLocale()),'Door jou fysiek bevestigd'],['Favorieten',favs.toLocaleString(currentLocale()),'Snel toegankelijk']].map((x,i)=>`<div class="metric"><div class="metricTop"><span>${x[0]}</span><div class="metricIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 12h16M12 4v16"/></svg></div></div><div class="metricValue">${x[1]}</div><div class="metricHint">${x[2]}</div></div>`).join('');const hist=(centralMode?centralRecentHistory:(state.history||[])).slice(0,5);$('recentHistory').innerHTML=hist.length?hist.map(h=>`<div class="recentItem"><div class="miniIcon">↺</div><div class="recentMain"><strong>${esc(h.label)}</strong><span>${esc(h.user)} · ${fmtDate(h.at)}</span></div></div>`).join(''):'<div class="empty" style="padding:20px">Nog geen wijzigingen.</div>';const favRows=state.favorites.map(id=>rows.find(r=>r.id===id)).filter(Boolean).slice(0,5);$('dashboardFavorites').innerHTML=favRows.length?favRows.map(r=>`<div class="recentItem" onclick="openDetails('${r.id}')" style="cursor:pointer"><div class="miniIcon">★</div><div class="recentMain"><strong>${esc(rowLabel(r))}</strong><span>${statusOf(r)} · ${r.snelheid||'—'} mm/min</span></div></div>`).join(''):'<div class="empty" style="padding:20px">Nog geen favorieten.</div>';const start=rows.filter(r=>statusOf(r)==='Startwaarde').length,own=rows.filter(r=>statusOf(r)==='Eigen instelling').length;$('qualitySummary').innerHTML=`<div class="settingRow"><div><strong>Wacht op goedkeuring</strong><span>Door Bijdragers toegevoegd</span></div><span class="pill amber">${centralMode?centralPendingCount:rows.filter(r=>r.approvalStatus==='pending').length}</span></div><div class="settingRow"><div><strong>Getest</strong><span>Eigen praktijkbevestiging</span></div><span class="pill green">${tested.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Startwaarde</strong><span>Nog te valideren op jouw machine</span></div><span class="pill amber">${start.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Eigen instellingen</strong><span>Zelf toegevoegd, nog niet getest</span></div><span class="pill purple">${own.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Niet aanbevolen</strong><span>Onbetrouwbare snijcombinaties</span></div><span class="pill red">${notRec.toLocaleString(currentLocale())}</span></div>`}
 function renderMaterials(){const q=$('materialSearch').value.trim().toLowerCase();const nq=normalizeSearchText(q);const mats=unique('materiaal').filter(m=>[m,translatedMaterialName(m,'en'),translatedMaterialName(m,'fr'),translatedMaterialName(m,'de')].some(v=>normalizeSearchText(v).includes(nq)));$('materialGrid').innerHTML=mats.map(m=>{const st=materialStats(m),safe=safetyForMaterial(m);return `<article class="materialCard" onclick="openMaterial(decodeURIComponent('${encodeURIComponent(m)}'))"><div class="materialVisual ${materialVisualClass(m)}"><span class="materialBadge">${esc(materialCategory(m))}</span></div><div class="materialBody"><h3>${esc(m)}</h3><div class="materialMeta"><span class="pill blue">${st.total} waarden</span>${st.tested?`<span class="pill green">${st.tested} getest</span>`:''}</div><div class="materialFoot"><span>${st.cut} snij · ${st.engrave} graveer</span><span>${safe.level==='ok'?'Normaal':safe.level==='warn'?'Let op':'Risico'}</span></div></div></article>`}).join('')||'<div class="empty">Geen materialen gevonden.</div>'}
 function openMaterial(m){const st=materialStats(m),safe=safetyForMaterial(m);const cut=rows.filter(r=>r.materiaal===m&&r.bewerking==='Snijden'&&Number(r.vermogen)===100&&r.snelheid&&r.approvalStatus!=='pending').sort((a,b)=>(Number(a.laserWatt)||70)-(Number(b.laserWatt)||70)||Number(a.dikte)-Number(b.dikte));const engr=LASER_PROFILES.map(w=>rows.filter(r=>r.materiaal===m&&r.bewerking==='Graveren'&&Number(r.laserWatt)===w&&r.snelheid&&r.approvalStatus!=='pending').sort((a,b)=>Math.abs(Number(a.vermogen)-35)-Math.abs(Number(b.vermogen)-35))[0]).filter(Boolean);$('materialDetail').innerHTML=`<div class="detailGrid"><div><div class="materialVisual ${materialVisualClass(m)}" style="height:150px;border-radius:14px"><span class="materialBadge">${esc(materialCategory(m))}</span></div><h2 style="margin:14px 0 4px">${esc(m)}</h2><div class="safety ${safe.level}"><strong>Materiaalveiligheid:</strong> ${esc(safe.text)}</div><h3>Snijden op 100% – beschikbare startpunten</h3><div style="display:flex;gap:7px;flex-wrap:wrap">${cut.map(r=>`<button class="btn secondary sm" onclick="closeModal('materialBackdrop');openDetails('${r.id}')">${r.laserWatt} W · ${r.dikte} mm · ${r.snelheid} mm/min · ${r.passes}×</button>`).join('')||'Geen snijwaarden'}</div></div><div class="detailSide"><h4>Profiel</h4><div class="metaLine"><span>Categorie</span><strong>${esc(materialCategory(m))}</strong></div><div class="metaLine"><span>Instellingen</span><strong>${st.total}</strong></div><div class="metaLine"><span>Laserprofielen</span><strong>10 / 20 / 40 / 70 W</strong></div><div class="metaLine"><span>Getest</span><strong>${st.tested}</strong></div><div class="metaLine"><span>Snijden</span><strong>${st.cut}</strong></div><div class="metaLine"><span>Graveren</span><strong>${st.engrave}</strong></div>${engr.length?`<h4 style="margin-top:16px">Graveerreferenties</h4>${engr.map(r=>`<div class="metaLine"><span>${r.laserWatt} W</span><strong>${r.vermogen}% · ${r.snelheid} mm/min</strong></div>`).join('')}`:''}</div></div>`;openModal('materialBackdrop')}
@@ -1650,48 +1691,23 @@ $('confirmOk').onclick=()=>{if(!$('confirmTypeWrap').classList.contains('hidden'
 $('refreshUsersBtn').onclick=()=>refreshCentralMeta();$('saveUserBtn').onclick=saveUser;$('historyCsvBtn').onclick=exportCentralHistoryCsv;$('historyRefreshBtn').onclick=()=>refreshCentralMeta();$('historySearch').oninput=renderHistory;$('historyTypeFilter').onchange=renderHistory;$('centralBackupBtn').onclick=exportCentralBackup;$('copySystemReportBtn').onclick=copySystemReport;$('mobileMenu').onclick=()=>$('sidebar').classList.toggle('open');$('lockBtn').onclick=logout;$('helpBtn').onclick=()=>openModal('helpBackdrop');$('saveClerkKeyBtn').onclick=()=>{const key=$('clerkKeyInput').value.trim();if(!key.startsWith('pk_'))return toast('Gebruik de Clerk Publishable Key die met pk_ begint.','bad');localStorage.setItem(CLERK_KEY_STORAGE,key);document.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content',key);toast('Clerk gekoppeld. index.html wordt aangemaakt.');setTimeout(downloadPortable,150)};$('resetClerkKeyBtn').onclick=()=>{localStorage.removeItem(CLERK_KEY_STORAGE);document.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content','');location.reload()};
 $('dashNew').onclick=()=>openEditor();$('dashTest').onclick=()=>showView('tests');$('newRowBtn').onclick=()=>openEditor();$('bulkDeleteBtn').onclick=bulkDelete;$('exportCsvBtn').onclick=exportCsv;$('backupBtn').onclick=exportBackup;$('portableBtn').onclick=downloadPortable;$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value=''};
 ['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).addEventListener(id==='filterSearch'?'input':'change',()=>{currentPage=1;renderSettings()}));$('clearFiltersBtn').onclick=()=>{['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).value='');currentPage=1;renderSettings()};$('pageSize').onchange=()=>{currentPage=1;renderSettings()};$('prevPage').onclick=()=>{currentPage=Math.max(1,currentPage-1);renderSettings()};$('nextPage').onclick=()=>{currentPage++;renderSettings()};
-function applyGlobalSearch(){
-  const q=$('globalSearch').value.trim();
-
-  // Een zoekopdracht bovenaan is bewust "globaal":
-  // oude filters mogen een nieuwe zoekactie niet onzichtbaar blokkeren.
-  ['filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability']
-    .forEach(id=>$(id).value='');
-
-  $('filterSearch').value=q;
-  currentPage=1;
+function submitGlobalSearch(){
   showView('settings');
+  $('filterSearch').value=$('globalSearch').value.trim();
+  currentPage=1;
   renderSettings();
 }
-let globalSearchTimer=null;
-$('globalSearch').addEventListener('input',()=>{
-  clearTimeout(globalSearchTimer);
-  globalSearchTimer=setTimeout(()=>{
-    const q=$('globalSearch').value.trim();
-    if(q.length>=2 || (q.length===0 && $('filterSearch').value)){
-      applyGlobalSearch();
-    }
-  },220);
-});
 $('globalSearch').addEventListener('keydown',e=>{
   if(e.key==='Enter'){
     e.preventDefault();
-    clearTimeout(globalSearchTimer);
-    applyGlobalSearch();
-  }else if(e.key==='Escape'){
-    $('globalSearch').value='';
-    if($('filterSearch').value){
-      $('filterSearch').value='';
-      currentPage=1;
-      renderSettings();
-    }
+    submitGlobalSearch();
   }
 });
-$('globalSearchBtn').addEventListener('click',applyGlobalSearch);
+$('globalSearchBtn').addEventListener('click',submitGlobalSearch);
 $('globalSearchBtn').addEventListener('keydown',e=>{
   if(e.key==='Enter'||e.key===' '){
     e.preventDefault();
-    applyGlobalSearch();
+    submitGlobalSearch();
   }
 });
 document.addEventListener('keydown',e=>{
