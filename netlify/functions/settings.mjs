@@ -513,6 +513,176 @@ async function loadMaterialProfiles() {
   return result;
 }
 
+
+function normalizeCategoryLabel(value) {
+  return shortText(value, 180)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[’‘`´]/g, "'")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function categoryTranslationTokens(category) {
+  return new Set(
+    PROFILE_LANGS
+      .map((lang) => normalizeCategoryLabel(category?.translations?.[lang]))
+      .filter(Boolean)
+  );
+}
+
+function categoriesShareTranslation(a, b) {
+  const aTokens = categoryTranslationTokens(a);
+  const bTokens = categoryTranslationTokens(b);
+  for (const token of aTokens) {
+    if (bTokens.has(token)) return true;
+  }
+  return false;
+}
+
+function duplicateCategoryGroups(categories = {}) {
+  const entries = Object.entries(categories);
+  const parent = new Map(entries.map(([id]) => [id, id]));
+
+  const find = (id) => {
+    let p = parent.get(id);
+    while (p !== parent.get(p)) {
+      parent.set(p, parent.get(parent.get(p)));
+      p = parent.get(p);
+    }
+    return p;
+  };
+
+  const union = (a, b) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent.set(rb, ra);
+  };
+
+  for (let i = 0; i < entries.length; i += 1) {
+    for (let j = i + 1; j < entries.length; j += 1) {
+      if (categoriesShareTranslation(entries[i][1], entries[j][1])) {
+        union(entries[i][0], entries[j][0]);
+      }
+    }
+  }
+
+  const groups = new Map();
+  for (const [id] of entries) {
+    const root = find(id);
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push(id);
+  }
+
+  return [...groups.values()].filter((group) => group.length > 1);
+}
+
+function canonicalCategoryId(ids, categories = {}) {
+  return [...ids].sort((a, b) => {
+    const ca = categories[a];
+    const cb = categories[b];
+    const ta = Date.parse(ca?.createdAt || "") || Number.MAX_SAFE_INTEGER;
+    const tb = Date.parse(cb?.createdAt || "") || Number.MAX_SAFE_INTEGER;
+    return ta - tb || a.localeCompare(b);
+  })[0] || "";
+}
+
+function findExistingCategoryByTranslations(category, categories = {}, excludeId = "") {
+  for (const [id, existing] of Object.entries(categories)) {
+    if (id === excludeId) continue;
+    if (categoriesShareTranslation(category, existing)) return existing;
+  }
+  return null;
+}
+
+async function deduplicateCustomCategories(user) {
+  if (user.role !== "admin") {
+    return json(
+      { success: false, error: "Alleen een Beheerder kan materiaalcategorieën samenvoegen." },
+      403
+    );
+  }
+
+  const categories = await loadCustomCategories();
+  const groups = duplicateCategoryGroups(categories);
+
+  if (!groups.length) {
+    return json({
+      success: true,
+      action: "deduplicate-custom-categories",
+      mergedCount: 0,
+      customCategories: categories,
+      materialProfiles: await loadMaterialProfiles(),
+      remap: {},
+    });
+  }
+
+  const profiles = await loadMaterialProfiles();
+  const remap = {};
+  let mergedCount = 0;
+
+  for (const group of groups) {
+    const canonicalId = canonicalCategoryId(group, categories);
+    const canonical = categories[canonicalId];
+    if (!canonical) continue;
+
+    for (const duplicateId of group) {
+      if (duplicateId === canonicalId) continue;
+      remap[duplicateId] = canonicalId;
+      mergedCount += 1;
+    }
+  }
+
+  // Repoint all material profiles before deleting duplicate categories.
+  for (const [material, profile] of Object.entries(profiles)) {
+    const newCategoryKey = remap[profile.categoryKey];
+    if (!newCategoryKey) continue;
+
+    const updatedProfile = cleanMaterialProfile({
+      ...profile,
+      categoryKey: newCategoryKey,
+      category: "",
+    });
+
+    await primaryStore().setJSON(profileBlobKey(material), {
+      material,
+      profile: updatedProfile,
+      updatedAt: new Date().toISOString(),
+      updatedById: user.id,
+      updatedByName: user.name,
+    });
+
+    profiles[material] = updatedProfile;
+  }
+
+  // Remove duplicate category blobs.
+  for (const duplicateId of Object.keys(remap)) {
+    await primaryStore().delete(categoryBlobKey(duplicateId));
+    delete categories[duplicateId];
+  }
+
+  await addHistoryEntry({
+    type: "material_category_merge",
+    label: `${mergedCount} dubbele materiaalcategorie${mergedCount === 1 ? "" : "ën"} samengevoegd`,
+    user,
+    rowId: "",
+    before: Object.keys(remap),
+    after: remap,
+    restorable: false,
+  });
+
+  return json({
+    success: true,
+    action: "deduplicate-custom-categories",
+    mergedCount,
+    customCategories: categories,
+    materialProfiles: profiles,
+    remap,
+  });
+}
+
 async function loadCustomCategories() {
   const listing = await listBlobsResilient("material-categories/", "list material categories");
   const entries = (
@@ -590,6 +760,21 @@ async function saveCustomCategory(body, user) {
     return json({ success: false, error: "Ongeldige materiaalcategorie." }, 400);
   }
 
+  // Uniqueness is based on translated labels, not on the random category ID.
+  // If any NL/EN/FR/DE translation is already present, reuse that category.
+  const categories = await loadCustomCategories();
+  const duplicate = findExistingCategoryByTranslations(category, categories, category.id);
+
+  if (duplicate) {
+    return json({
+      success: true,
+      action: "save-custom-category",
+      category: duplicate,
+      duplicate: true,
+      mergedInto: duplicate.id,
+    });
+  }
+
   const key = categoryBlobKey(category.id);
   const existing = await getBlobResilient(key, "json").catch(() => null);
 
@@ -614,6 +799,7 @@ async function saveCustomCategory(body, user) {
     success: true,
     action: "save-custom-category",
     category,
+    duplicate: false,
   });
 }
 
@@ -1036,6 +1222,8 @@ async function handlePatch(request, user) {
       return saveMaterialProfile(body, user);
     case "save-custom-category":
       return saveCustomCategory(body, user);
+    case "deduplicate-custom-categories":
+      return deduplicateCustomCategories(user);
     default:
       return json({ success: false, error: "Onbekende beheeractie." }, 400);
   }
@@ -1069,7 +1257,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 10,
+        version: 11,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         materialProfiles,
