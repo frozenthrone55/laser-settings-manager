@@ -269,37 +269,46 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 }
 
 
-.searchFieldWrap{min-width:0;padding-bottom:5px}
+.searchFieldWrap{
+  min-width:0;
+  padding-bottom:8px;
+}
 .exactMaterialToggle{
-  display:flex;
+  display:inline-flex;
   align-items:center;
-  gap:9px;
-  width:max-content;
+  justify-content:flex-start;
+  flex-wrap:nowrap;
+  gap:8px;
+  width:auto;
   max-width:100%;
-  min-height:20px;
+  min-height:22px;
   margin-top:10px;
-  padding:1px 3px;
+  padding:2px 2px 2px 0;
   font-size:11px;
   font-weight:750;
-  line-height:16px;
+  line-height:1;
   color:var(--muted);
   cursor:pointer;
   user-select:none;
+  white-space:nowrap;
 }
 .exactMaterialToggle input{
   flex:0 0 16px;
   width:16px;
   height:16px;
+  min-width:16px;
+  min-height:16px;
   margin:0;
   padding:0;
-  vertical-align:middle;
+  display:block;
   accent-color:#2268d8;
   cursor:pointer;
 }
 .exactMaterialToggle span{
-  display:block;
+  display:inline-block;
   line-height:16px;
   white-space:nowrap;
+  vertical-align:middle;
 }
 
 
@@ -426,7 +435,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.8-dev';
+const APP_VERSION='2.3.9-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
