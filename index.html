@@ -386,7 +386,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 </nav>
 <div class="sidebottom"><div class="userchip"><div class="avatar" id="sideAvatar">A</div><div class="usertext"><strong id="sideUser">Admin</strong><span id="sideRole">Beheerder</span></div></div><div class="sideactions"><button id="lockBtn">Vergrendel</button><button id="helpBtn">Help</button></div></div></aside>
 
-<div class="shell"><header class="topbar"><button class="mobileMenu" id="mobileMenu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button><div class="pageTitle" id="pageTitle">Dashboard</div><div class="topSearch"><svg id="globalSearchBtn" role="button" tabindex="0" aria-label="Zoeken" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="globalSearch" placeholder="Zoek bv. ‘berk 6mm snijden 100%’"><span class="kbd">Ctrl K</span></div><div class="topLanguage"><select class="langSelect" id="topLanguageSelect" aria-label="Language">
+<div class="shell"><header class="topbar"><button class="mobileMenu" id="mobileMenu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button><div class="pageTitle" id="pageTitle">Dashboard</div><div class="topSearch"><svg id="globalSearchBtn" role="button" tabindex="0" aria-label="Zoeken" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="globalSearch" list="materialDatalist" autocomplete="off" placeholder="Zoek bv. ‘berk 6mm snijden 100%’"><span class="kbd">Ctrl K</span></div><div class="topLanguage"><select class="langSelect" id="topLanguageSelect" aria-label="Language">
   <option value="nl">NL</option>
   <option value="en">EN</option>
   <option value="fr">FR</option>
@@ -466,7 +466,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.17-dev';
+const APP_VERSION='2.3.18-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -625,14 +625,33 @@ function translateDom(root=document.body){
 function fillSearchMaterialDatalist(){
   const list=$('materialDatalist');
   if(!list||typeof rows==='undefined')return;
-  const mats=unique('materiaal').sort((a,b)=>
-    translatedMaterialName(a,currentLanguage).localeCompare(
+
+  const values=[];
+  const seen=new Set();
+  const add=value=>{
+    const label=txt(value).trim();
+    const key=normalizeSearchText(label);
+    if(!label||seen.has(key))return;
+    seen.add(key);
+    values.push(label);
+  };
+
+  unique('materiaal')
+    .sort((a,b)=>translatedMaterialName(a,currentLanguage).localeCompare(
       translatedMaterialName(b,currentLanguage),
       currentLocale()
-    )
-  );
-  list.innerHTML=mats.map(material=>
-    `<option value="${esc(translatedMaterialName(material,currentLanguage))}"></option>`
+    ))
+    .forEach(material=>add(translatedMaterialName(material,currentLanguage)));
+
+  try{
+    allCategoryEntries(currentLanguage)
+      .map(entry=>entry.label)
+      .sort((a,b)=>txt(a).localeCompare(txt(b),currentLocale()))
+      .forEach(add);
+  }catch(e){}
+
+  list.innerHTML=values.map(value=>
+    `<option value="${esc(value)}"></option>`
   ).join('');
 }
 
@@ -2610,6 +2629,98 @@ function exactMaterialForQuery(q){
   })||null;
 }
 
+
+function materialSearchAliases(material){
+  const values=[material];
+
+  for(const lang of I18N_LANGS){
+    values.push(translatedMaterialName(material,lang));
+  }
+
+  try{
+    const key=categoryKeyForMaterial(material);
+    for(const lang of I18N_LANGS){
+      values.push(categoryLabelByKey(key,lang));
+    }
+  }catch(e){}
+
+  try{
+    const profile=getMaterialProfile(material)||{};
+    values.push(
+      profile.manufacturer,
+      profile.supplier,
+      profile.internalCode,
+      profile.materialColor,
+      profile.transparency,
+      profile.suitability,
+      profile.defaultAirAssist,
+      profile.ralCode
+    );
+
+    for(const lang of I18N_LANGS){
+      const t=profile.translations?.[lang]||{};
+      values.push(t.name,t.description,t.safetyText,t.notes);
+    }
+  }catch(e){}
+
+  return values.filter(Boolean);
+}
+
+function searchHaystackForRow(r){
+  const values=[
+    ...materialSearchAliases(r.materiaal),
+    r.bewerking,
+    r.opmerking,
+    r.source,
+    r.reliability,
+    statusOf(r),
+    `${r.laserWatt} w`,
+    `${r.dikte} mm`,
+    `${r.vermogen}%`,
+    r.createdByName,
+    r.createdByEmail,
+    r.updatedByName
+  ];
+
+  for(const lang of I18N_LANGS){
+    values.push(
+      trExact(r.bewerking,lang),
+      trExact(r.source,lang),
+      trExact(r.reliability,lang),
+      trExact(statusOf(r),lang)
+    );
+  }
+
+  return normalizeSearchText(values.filter(Boolean).join(' '));
+}
+
+function searchRankForRow(r,q){
+  const p=smartParsed(q);
+  const term=normalizeSearchText(p.terms.join(' '));
+  if(!term)return 20;
+
+  const materialNames=materialSearchAliases(r.materiaal)
+    .slice(0,1 + I18N_LANGS.length)
+    .map(normalizeSearchText)
+    .filter(Boolean);
+
+  if(materialNames.some(name=>name===term))return 0;
+  if(materialNames.some(name=>name.startsWith(term)))return 1;
+  if(materialNames.some(name=>name.includes(term)))return 2;
+
+  try{
+    const key=categoryKeyForMaterial(r.materiaal);
+    const categories=I18N_LANGS
+      .map(lang=>normalizeSearchText(categoryLabelByKey(key,lang)))
+      .filter(Boolean);
+    if(categories.some(name=>name===term))return 3;
+    if(categories.some(name=>name.startsWith(term)))return 4;
+    if(categories.some(name=>name.includes(term)))return 5;
+  }catch(e){}
+
+  return 10;
+}
+
 function smartParsed(q){
   const raw=normalizeSearchText(q);
   const mm=raw.match(/(\d+(?:[.,]\d+)?)\s*mm/i);
@@ -2639,28 +2750,10 @@ function matchesSmart(r,q){
   if(p.pct!==null&&Number(r.vermogen)!==p.pct)return false;
   if(p.op&&r.bewerking!==p.op)return false;
 
-  const hay=normalizeSearchText([
-    r.materiaal,
-    translatedMaterialName(r.materiaal,'en'),
-    translatedMaterialName(r.materiaal,'fr'),
-    translatedMaterialName(r.materiaal,'de'),
-    r.bewerking,
-    r.opmerking,
-    r.source,
-    r.reliability,
-    statusOf(r),
-    searchAliasesForRow(r),
-    `${r.laserWatt} w`,
-    `${r.dikte} mm`,
-    `${r.vermogen}%`,
-    r.createdByName,
-    r.createdByEmail,
-    r.updatedByName
-  ].join(' '));
-
+  const hay=searchHaystackForRow(r);
   return p.terms.every(t=>hay.includes(normalizeSearchText(t)));
 }
-function filteredRows(){const q=$('filterSearch').value.trim(),exact=$('filterExactMaterial').checked,exactMaterial=exact?exactMaterialForQuery(q):null,lw=$('filterLaserWatt').value,th=$('filterThickness').value,op=$('filterOperation').value,pw=$('filterPower').value,st=$('filterStatus').value,rel=$('filterReliability').value;return rows.filter(r=>(exact?(exactMaterial!==null&&r.materiaal===exactMaterial):matchesSmart(r,q))&&(!lw||String(r.laserWatt)===lw)&&(!th||String(r.dikte)===th)&&(!op||r.bewerking===op)&&(!pw||String(r.vermogen)===pw)&&(!st||statusOf(r)===st)&&(!rel||r.reliability===rel)).sort(sortRows)}
+function filteredRows(){const q=$('filterSearch').value.trim(),exact=$('filterExactMaterial').checked,exactMaterial=exact?exactMaterialForQuery(q):null,lw=$('filterLaserWatt').value,th=$('filterThickness').value,op=$('filterOperation').value,pw=$('filterPower').value,st=$('filterStatus').value,rel=$('filterReliability').value;return rows.filter(r=>(exact?(exactMaterial!==null&&r.materiaal===exactMaterial):matchesSmart(r,q))&&(!lw||String(r.laserWatt)===lw)&&(!th||String(r.dikte)===th)&&(!op||r.bewerking===op)&&(!pw||String(r.vermogen)===pw)&&(!st||statusOf(r)===st)&&(!rel||r.reliability===rel)).sort((a,b)=>{if(q&&!exact){const d=searchRankForRow(a,q)-searchRankForRow(b,q);if(d)return d}return sortRows(a,b)})}
 function activeFilters(){return $('filterExactMaterial').checked||['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].some(id=>txt($(id).value).trim()!=='')}
 function fillOptions(){const mats=unique('materiaal').sort((a,b)=>translatedMaterialName(a,currentLanguage).localeCompare(translatedMaterialName(b,currentLanguage),currentLocale()));fillMaterialCategoryOptions();fillEditorMaterialSelect($('editMaterialSelect')?.value||'');fillSearchMaterialDatalist();const laserOptions=LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');const currentFilter=$('filterLaserWatt').value,currentEdit=$('editLaserWatt').value,currentTest=$('testLaserWatt').value;$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+laserOptions;$('editLaserWatt').innerHTML=laserOptions;$('testLaserWatt').innerHTML=laserOptions;if(LASER_PROFILES.map(String).includes(currentFilter))$('filterLaserWatt').value=currentFilter;if(LASER_PROFILES.map(String).includes(currentEdit))$('editLaserWatt').value=currentEdit;else $('editLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);if(LASER_PROFILES.map(String).includes(currentTest))$('testLaserWatt').value=currentTest;else $('testLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);$('filterOperation').innerHTML=`<option value="">${esc(tr('Alle'))}</option>`+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(tr(v))}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(translatedMaterialName(v))}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');const sub=document.querySelector('.brandsub');if(sub)sub.textContent=LASER_PROFILES.map(v=>`${v} W`).join(' · ')}
 function num(v,unit=''){if(v===''||v===null||v===undefined)return '<span style="color:#9aa5b5">—</span>';return `${Number(v).toLocaleString(currentLocale(),{maximumFractionDigits:1})}${unit}`}
@@ -3075,10 +3168,14 @@ $('refreshUsersBtn').onclick=()=>refreshCentralMeta();$('saveUserBtn').onclick=s
 $('dashNew').onclick=()=>openEditor();$('dashTest').onclick=()=>showView('tests');$('newRowBtn').onclick=()=>openEditor();$('bulkDeleteBtn').onclick=bulkDelete;$('exportCsvBtn').onclick=exportCsv;$('backupBtn').onclick=exportBackup;$('portableBtn').onclick=downloadPortable;$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value=''};
 ['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).addEventListener(id==='filterSearch'?'input':'change',()=>{currentPage=1;renderSettings()}));$('filterExactMaterial').addEventListener('change',()=>{currentPage=1;renderSettings()});$('clearFiltersBtn').onclick=()=>{['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).value='');$('filterExactMaterial').checked=false;currentPage=1;renderSettings()};$('pageSize').onchange=()=>{currentPage=1;renderSettings()};$('prevPage').onclick=()=>{currentPage=Math.max(1,currentPage-1);renderSettings()};$('nextPage').onclick=()=>{currentPage++;renderSettings()};
 function submitGlobalSearch(){
+  const query=$('globalSearch').value.trim();
   showView('settings');
-  $('filterSearch').value=$('globalSearch').value.trim();
+  $('filterSearch').value=query;
   currentPage=1;
   renderSettings();
+  requestAnimationFrame(()=>{
+    $('filterSearch')?.scrollIntoView({block:'nearest'});
+  });
 }
 $('globalSearch').addEventListener('keydown',e=>{
   if(e.key==='Enter'){
