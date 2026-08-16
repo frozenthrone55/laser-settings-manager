@@ -724,7 +724,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.28-dev';
+const APP_VERSION='2.3.29-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -3322,6 +3322,53 @@ function renderSettings(){
   $('prevPage').textContent=tr('Vorige');
   $('nextPage').textContent=tr('Volgende');
 }
+
+/* v2.3.29 — favorieten en dashboard hersteld */
+function toggleFavorite(id){
+  if(!id)return;
+  if(!Array.isArray(state.favorites))state.favorites=[];
+  const i=state.favorites.indexOf(id);
+  if(i>=0)state.favorites.splice(i,1);
+  else state.favorites.push(id);
+
+  // Verwijder verwijzingen naar rijen die niet meer bestaan.
+  state.favorites=state.favorites.filter(fid=>rows.some(r=>r.id===fid));
+  saveState();
+
+  renderSettings();
+  renderFavorites();
+  renderDashboard();
+}
+function renderFavorites(){
+  if(!Array.isArray(state.favorites))state.favorites=[];
+  const favRows=state.favorites
+    .map(id=>rows.find(r=>r.id===id))
+    .filter(Boolean)
+    .sort(sortRows);
+
+  const body=$('favoritesBody');
+  if(!body)return;
+
+  body.innerHTML=favRows.length
+    ?favRows.map(r=>`<tr>
+      <td><button class="star on" onclick="toggleFavorite('${r.id}')" title="${esc(tr('Favoriet'))}">★</button></td>
+      <td>${statusPill(r)}</td>
+      <td><span class="pill ${r.bewerking==='Snijden'?'opCut':'opEngrave'}">${esc(tr(r.bewerking))}</span></td>
+      <td><strong>${esc(translatedMaterialName(r.materiaal))}</strong><div class="rowSub">${Number(r.laserWatt)||70} W</div></td>
+      <td class="num">${r.dikte!==''?num(r.dikte,' mm'):'—'}</td>
+      <td class="num">${num(r.vermogen,'%')}</td>
+      <td class="num">${r.snelheid!==''?num(r.snelheid,' mm/min'):'—'}</td>
+      <td class="num">${r.passes!==''?num(r.passes):'—'}</td>
+      <td class="actions">
+        <button class="btn secondary sm" onclick="openDetails('${r.id}')">${esc(tr('Details'))}</button>
+        ${can('edit')?` <button class="btn secondary sm" onclick="openEditor('${r.id}')">${esc(tr('Wijzig'))}</button>`:''}
+        ${can('admin')?` <button class="btn danger sm" onclick="deleteRow('${r.id}')">${esc(tr('Verwijder'))}</button>`:''}
+      </td>
+    </tr>`).join('')
+    :'<tr><td colspan="9" class="empty">Nog geen favorieten. Klik op ★ bij een instelling.</td></tr>';
+}
+function renderDashboard(){if(!Array.isArray(state.favorites))state.favorites=[];const materials=unique('materiaal').length,tested=rows.filter(r=>r.tested&&r.approvalStatus!=='pending').length,notRec=rows.filter(r=>statusOf(r)==='Niet aanbevolen').length,favs=state.favorites.length;$('metrics').innerHTML=[['Instellingen',rows.length.toLocaleString(currentLocale()),'10/20/40/70 W samen'],['Materialen',materials.toLocaleString(currentLocale()),'Acacia-master + materiaalfactoren'],['Getest',tested.toLocaleString(currentLocale()),'Door jou fysiek bevestigd'],['Favorieten',favs.toLocaleString(currentLocale()),'Snel toegankelijk']].map((x,i)=>`<div class="metric"><div class="metricTop"><span>${x[0]}</span></div><div class="metricValue">${x[1]}</div><div class="metricHint">${x[2]}</div></div>`).join('');const hist=(centralMode?centralRecentHistory:(state.history||[])).slice(0,5);$('recentHistory').innerHTML=hist.length?hist.map(h=>`<div class="recentItem"><div class="miniIcon">↺</div><div class="recentMain"><strong data-i18n-skip="true">${esc(localizedHistoryLabel(h))}</strong><span>${esc(h.user)} · ${fmtDate(h.at)}</span></div></div>`).join(''):'<div class="empty" style="padding:20px">Nog geen wijzigingen.</div>';const favRows=state.favorites.map(id=>rows.find(r=>r.id===id)).filter(Boolean).slice(0,5);$('dashboardFavorites').innerHTML=favRows.length?favRows.map(r=>`<div class="recentItem" onclick="openDetails('${r.id}')" style="cursor:pointer"><div class="miniIcon">★</div><div class="recentMain"><strong data-i18n-skip="true">${esc(localizedRowLabel(r))}</strong><span>${statusOf(r)} · ${r.snelheid||'—'} mm/min</span></div></div>`).join(''):'<div class="empty" style="padding:20px">Nog geen favorieten.</div>';const start=rows.filter(r=>statusOf(r)==='Startwaarde').length,own=rows.filter(r=>statusOf(r)==='Eigen instelling').length;$('qualitySummary').innerHTML=`<div class="settingRow"><div><strong>Wacht op goedkeuring</strong><span>Door Bijdragers toegevoegd</span></div><span class="pill amber">${centralMode?centralPendingCount:rows.filter(r=>r.approvalStatus==='pending').length}</span></div><div class="settingRow"><div><strong>Getest</strong><span>Eigen praktijkbevestiging</span></div><span class="pill green">${tested.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Startwaarde</strong><span>Nog te valideren op jouw machine</span></div><span class="pill amber">${start.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Eigen instellingen</strong><span>Zelf toegevoegd, nog niet getest</span></div><span class="pill purple">${own.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Niet aanbevolen</strong><span>Onbetrouwbare snijcombinaties</span></div><span class="pill red">${notRec.toLocaleString(currentLocale())}</span></div>`}
+
 function renderMaterials(){const q=$('materialSearch').value.trim();const nq=normalizeSearchText(q);const mats=unique('materiaal').filter(m=>I18N_LANGS.some(lang=>normalizeSearchText(translatedMaterialName(m,lang)).includes(nq))||normalizeSearchText(m).includes(nq));$('materialGrid').innerHTML=mats.map(m=>{const st=materialStats(m),safe=safetyForMaterial(m),desc=materialDescription(m),name=translatedMaterialName(m);return `<article class="materialCard" onclick="openMaterial(decodeURIComponent('${encodeURIComponent(m)}'))">${materialVisualHtml(m,92)}<div class="materialBody"><h3>${esc(name)}</h3><div class="materialMeta"><span class="pill blue">${esc(tr(`${st.total} waarden`))}</span>${st.tested?`<span class="pill green">${esc(tr(`${st.tested} getest`))}</span>`:''}</div><div class="materialDesc">${esc(desc)}</div><div class="materialFoot"><span>${esc(tr(`${st.cut} snij · ${st.engrave} graveer`))}</span><span>${esc(tr(safe.level==='ok'?'Normaal':safe.level==='warn'?'Let op':'Risico'))}</span></div></div></article>`}).join('')||`<div class="empty">${esc(tr('Geen materialen gevonden.'))}</div>`}
 function openMaterial(m){activeMaterialName=m;const st=materialStats(m),safe=safetyForMaterial(m),desc=materialDescription(m),name=translatedMaterialName(m);const cut=rows.filter(r=>r.materiaal===m&&r.bewerking==='Snijden'&&Number(r.vermogen)===100&&r.snelheid&&r.approvalStatus!=='pending').sort((a,b)=>(Number(a.laserWatt)||70)-(Number(b.laserWatt)||70)||Number(a.dikte)-Number(b.dikte));const engr=LASER_PROFILES.map(w=>rows.filter(r=>r.materiaal===m&&r.bewerking==='Graveren'&&Number(r.laserWatt)===w&&r.snelheid&&r.approvalStatus!=='pending').sort((a,b)=>Math.abs(Number(a.vermogen)-35)-Math.abs(Number(b.vermogen)-35))[0]).filter(Boolean);$('materialDetail').innerHTML=`<div class="detailGrid"><div>${materialVisualHtml(m,150)}<h2 style="margin:14px 0 4px">${esc(name)}</h2><div class="materialDesc" style="margin-top:0">${esc(desc)}</div><div class="safety ${safe.level}" style="margin-top:12px"><strong>${esc(tr('Materiaalveiligheid:'))}</strong> ${esc(safe.text)}</div>${can('edit')?`<div style="margin-top:12px"><button class="btn secondary sm" onclick="openMaterialEditor(decodeURIComponent('${encodeURIComponent(m)}'))">${esc(tr('Materiaal aanpassen'))}</button></div>`:''}<h3>${esc(tr('Snijden op 100% – beschikbare startpunten'))}</h3><div style="display:flex;gap:7px;flex-wrap:wrap">${cut.map(r=>`<button class="btn secondary sm" onclick="closeModal('materialBackdrop');openDetails('${r.id}')">${r.laserWatt} W · ${r.dikte} mm · ${r.snelheid} mm/min · ${r.passes}×</button>`).join('')||esc(tr('Geen snijwaarden'))}</div></div><div class="detailSide"><h4>${esc(tr('Profiel'))}</h4><div class="metaLine"><span>${esc(tr('Categorie'))}</span><strong>${esc(materialCategory(m))}</strong></div><div class="metaLine"><span>${esc(tr('Instellingen'))}</span><strong>${st.total}</strong></div><div class="metaLine"><span>${esc(tr('Laserprofielen'))}</span><strong>${LASER_PROFILES.join(' / ')} W</strong></div>${materialPropertyHtml(m)}<div class="metaLine"><span>${esc(tr('Getest'))}</span><strong>${st.tested}</strong></div><div class="metaLine"><span>${esc(tr('Snijden'))}</span><strong>${st.cut}</strong></div><div class="metaLine"><span>${esc(tr('Graveren'))}</span><strong>${st.engrave}</strong></div>${engr.length?`<h4 style="margin-top:16px">${esc(tr('Graveerreferenties'))}</h4>${engr.map(r=>`<div class="metaLine"><span>${r.laserWatt} W</span><strong>${r.vermogen}% · ${r.snelheid} mm/min</strong></div>`).join('')}`:''}</div></div>`;openModal('materialBackdrop')}
 function previewMaterialImage(){const mode=$('materialEditVisualMode')?.value||'auto',box=$('materialPhotoPreview');if(mode==='ral'){const code=normalizeRalCode($('materialEditRalCode').value)||'RAL';const hex=$('materialEditRalHex').value||'#eeeeee';box.className='materialPhotoPreview ral';box.style.background=hex;box.innerHTML=`<span class="ralPreviewLabel">${esc(code)} · ${esc(hex.toUpperCase())}</span>`;return}if(mode==='transparent'){const hex=transparentTintValue();const alpha=transparentOpacityValue();box.className='materialPhotoPreview transparent';box.style.background='';box.innerHTML=`<span class="transparentPreviewLayer" style="background:${esc(hex)};opacity:${alpha}"></span><span class="transparentPreviewLabel">Transparant · ${esc(hex.toUpperCase())} · ${Math.round(alpha*100)}%</span>`;return}box.style.background='';const url=$('materialEditImageUrl').value.trim();if((mode==='url'||mode==='upload')&&url){box.className='materialPhotoPreview';box.innerHTML=`<img src="${esc(url)}" alt="Materiaalfoto">`;return}const p=getMaterialProfile($('materialEditName').value);if((mode==='url'||mode==='upload')&&p.image){box.className='materialPhotoPreview';box.innerHTML=`<img src="${esc(p.image)}" alt="Materiaalfoto">`;return}box.className='materialPhotoPreview empty';box.textContent=mode==='auto'?'Automatische materiaalillustratie.':'Nog geen foto gekozen.'}
