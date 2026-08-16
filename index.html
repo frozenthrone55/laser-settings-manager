@@ -376,6 +376,27 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
   .filterFooterActions{flex-direction:column}
   .filterFooterActions .btn{width:100%}
 }
+
+/* v2.3.25 — gegroepeerd formulier Nieuwe instelling */
+.editorSections{display:flex;flex-direction:column;gap:14px}
+.editorSection{border:1px solid var(--line);border-radius:13px;background:#fbfcfe;padding:13px}
+.editorSectionTitle{
+  display:flex;align-items:center;justify-content:center;width:100%;min-height:32px;
+  box-sizing:border-box;margin:0 0 12px;padding:6px 10px;border:1px solid #cfe0ff;
+  border-radius:9px;background:var(--blue2);color:var(--blue);font-size:11px;
+  font-weight:850;letter-spacing:.07em;text-transform:uppercase
+}
+.editorSectionGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.editorSectionWattage .editorSectionGrid{grid-template-columns:minmax(180px,280px)}
+.editorSectionMachine .editorSectionGrid{grid-template-columns:repeat(2,minmax(220px,1fr))}
+.editorSection .span2{grid-column:span 2}
+.editorSection .span3{grid-column:1/-1}
+.editorTestedRow{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;margin-top:2px}
+@media(max-width:760px){
+  .editorSectionGrid,.editorSectionWattage .editorSectionGrid,.editorSectionMachine .editorSectionGrid{grid-template-columns:1fr}
+  .editorSection .span2,.editorSection .span3{grid-column:auto}
+  .editorTestedRow{grid-column:auto}
+}
 </style>
 </head>
 <body>
@@ -497,11 +518,130 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 <section class="view adminOnly" id="view-admin"><div class="viewHead"><div><h1>Beheer</h1><p>Clerk-toegang, back-ups, opslag en wijzigingsgeschiedenis.</p></div><div class="toolbar"><button class="btn secondary" id="adminBackup">Back-up</button><button class="btn danger" id="resetBtn">Herstel ingebouwde database</button></div></div><div class="card" style="margin-bottom:16px"><div class="cardHead"><div><h2>Goedkeuringswachtrij</h2><p>Instellingen die door Bijdragers zijn toegevoegd, worden pas na goedkeuring als normale instelling beschouwd.</p></div><span class="pill amber" id="pendingCountPill">0 wachtend</span></div><div class="approvalQueue" id="approvalQueue"><div class="empty">Geen instellingen wachten op goedkeuring.</div></div></div><div class="adminGrid"><div class="card"><div class="cardHead"><div><h2>Online toegangsbeheer</h2><p>Authenticatie en uitnodigingen lopen via Clerk.</p></div><span class="pill green">Clerk</span></div><div class="clerkInfo"><div class="settingRow"><div><strong>Account</strong><span id="clerkAccountInfo">Admin</span></div></div><div class="settingRow"><div><strong>Organisatierol</strong><span id="clerkRoleInfo">Beheerder</span></div></div></div><div class="settingRow" style="margin-top:10px"><div><strong>Lokale opslag</strong><span id="storageInfo">Compact opgeslagen: 0.3 KB. Alleen wijzigingen en metadata.</span></div><span class="pill green">Actief</span></div><div class="safety ok" style="margin-top:14px"><strong>Uitnodigingen:</strong> open <strong>Gebruikers</strong> in het menu. Clerk verstuurt de uitnodigingsmail en beheert wachtwoorden, sessies en accountbeveiliging.</div></div><div class="card"><div class="cardHead"><div><h2>Databeheer</h2><p>Exporteer, importeer of maak een draagbare HTML.</p></div></div><div class="quickGrid"><button class="quick" id="adminCsv"><strong>CSV exporteren</strong><span>Alle huidige instellingen</span></button><button class="quick" id="adminImport"><strong>Back-up importeren</strong><span>JSON met data en metadata</span></button><button class="quick" id="adminBackup2"><strong>JSON back-up</strong><span>Inclusief favorieten en geschiedenis</span></button></div><div class="safety ok"><strong>Belangrijk:</strong> alleen de Clerk Publishable Key wordt in de HTML opgeslagen. Een Clerk Secret Key hoort nooit in dit bestand.</div></div></div><div class="card" style="margin-top:16px"><div class="cardHead"><div><h2>Systeemstatus &amp; back-up</h2><p>Live overzicht van de centrale database. Er worden geen geheime sleutels in een back-up opgenomen.</p></div><div class="toolbar"><button class="btn secondary sm" id="copySystemReportBtn">Rapport kopiëren</button><button class="btn primary sm" id="centralBackupBtn">Centrale back-up</button></div></div><div class="healthGrid" id="systemHealthGrid"><div class="healthItem"><span>API</span><strong id="healthApi">—</strong></div><div class="healthItem"><span>Laatste synchronisatie</span><strong id="healthSync">—</strong></div><div class="healthItem"><span>Centrale wijzigingen</span><strong id="healthUpserts">—</strong></div><div class="healthItem"><span>Verwijderde overrides</span><strong id="healthDeleted">—</strong></div><div class="healthItem"><span>Wacht op goedkeuring</span><strong id="healthPending">—</strong></div><div class="healthItem"><span>Auditregels</span><strong id="healthHistory">—</strong></div><div class="healthItem"><span>Gebruikers</span><strong id="healthUsers">—</strong></div><div class="healthItem"><span>Laatste centrale back-up</span><strong id="healthBackup">Nog nooit</strong></div></div><div class="backupNote"><strong>Back-up en GitHub-release zijn verschillend:</strong> een GitHub-release bewaart je programmacode. De knop <strong>Centrale back-up</strong> bewaart de centrale instellingen, verwijderingen en wijzigingsgeschiedenis als JSON.</div></div><div class="card" style="margin-top:16px"><div class="cardHead"><div><h2>Beveiligingsstatus</h2><p>Extra servercontroles bovenop Clerk-authenticatie.</p></div><span class="pill green">Actief</span></div><div class="settingRow"><div><strong>Clerk sessieverificatie</strong><span>Alle API-aanvragen vereisen een geldige sessie.</span></div><span class="pill green">Actief</span></div><div class="settingRow"><div><strong>Broncontrole</strong><span>Schrijfacties worden alleen vanaf de officiële website aanvaard.</span></div><span class="pill green">Actief</span></div><div class="settingRow"><div><strong>Aanvraaglimiet</strong><span>Te grote schrijfopdrachten worden server-side geweigerd.</span></div><span class="pill green">Actief</span></div></div><div class="card" style="margin-top:16px"><div class="cardHead"><div><h2>Centrale wijzigingsgeschiedenis</h2><p>Laatste 300 acties uit de gedeelde database. Zoek op actie, gebruiker of instelling.</p></div><div class="toolbar"><button class="btn secondary sm" id="historyCsvBtn">CSV exporteren</button><button class="btn secondary sm" id="historyRefreshBtn">Vernieuwen</button></div></div><div class="historyFilters"><input class="field" id="historySearch" placeholder="Zoek in geschiedenis…"><select class="field" id="historyTypeFilter"><option value="">Alle actietypes</option></select><span class="historyCount" id="historyCount">0 acties</span></div><div class="historyList" id="historyList"><div class="empty">Nog geen wijzigingen.</div></div></div></section>
 </main></div></div>
 
-<div class="modalBackdrop hidden" id="editorBackdrop"><div class="modal lg"><div class="modalHead"><h2 id="editorTitle">Instelling</h2><button class="modalClose" data-close="editorBackdrop">×</button></div><form id="editorForm"><div class="modalBody"><div class="formGrid"><div class="span3" id="editorSafety"></div><div class="field"><label>Laservermogen</label><select id="editLaserWatt"><option value="10">10 W</option><option value="20">20 W</option><option value="40">40 W</option><option value="70">70 W</option></select></div><div class="field"><label>Materiaalkeuze</label><select id="editMaterialMode"><option value="existing">Bestaand materiaal</option><option value="new">Nieuw materiaal</option></select></div>
-<div class="field span2" id="editMaterialExistingWrap"><label>Materiaal</label><select id="editMaterialSelect"><option value="">Kies materiaal…</option></select></div>
-<div class="field span2 hidden" id="editMaterialNewWrap"><label>Naam nieuw materiaal</label><input id="editMaterialNew" autocomplete="off" placeholder="bv. Plexiglas rood transparant"><div class="materialHelp">Typ de naam in de huidige interfacetaal. De app vertaalt de naam automatisch naar NL / EN / FR / DE.</div><div class="field" style="margin-top:12px"><label>Categorie nieuw materiaal</label><input id="editNewMaterialCategory" list="materialCategoryDatalist" autocomplete="off" placeholder="Kies of typ een categorie"><div class="materialHelp">Kies een bestaande categorie of typ een nieuwe categorie. De gekozen categorie wordt automatisch vertaald en centraal opgeslagen.</div></div></div>
-<input type="hidden" id="editMaterial">
-<datalist id="materialDatalist"></datalist><div class="field"><label>Bewerking</label><select id="editOperation"><option>Snijden</option><option>Graveren</option></select></div><div class="field"><label>Dikte (mm)</label><input id="editThickness" type="number" min="0" step="0.1"></div><div class="field"><label>Vermogen (%)</label><input id="editPower" type="number" min="0" max="100" step="1" required=""></div><div class="field"><label>Effectief vermogen</label><input id="editEffective" readonly=""></div><div class="field"><label>Snelheid (mm/min)</label><input id="editSpeed" type="number" min="0" step="1"></div><div class="field"><label>Aantal passes</label><input id="editPasses" type="number" min="1" step="1"></div><div class="field"><label>Air Assist</label><input id="editAir"></div><div class="field"><label>Bron</label><select id="editSource"><option>Samengestelde referentie</option><option>Acacia-referentie · materiaalfactor</option><option>Afgeleid startpunt · fabrikantreferenties</option><option>Fabrikant</option><option>Forum / praktijk</option><option>Eigen test</option><option>Eigen instelling</option></select></div><div class="field"><label>Betrouwbaarheid</label><select id="editReliability"><option>Gemiddeld</option><option>Hoog</option><option>Experimenteel</option></select></div><div class="field"><label>Merk graveertoestel</label><input id="editMachineBrand" list="machineBrandDatalist" autocomplete="off" placeholder="Typ of kies een merk…"><div class="materialHelp">Vrije tekst is mogelijk. Bestaande merken verschijnen automatisch als suggestie.</div></div><div class="field"><label>Type / model graveertoestel</label><input id="editMachineModel" list="machineModelDatalist" autocomplete="off" placeholder="Typ of kies een type/model…"><div class="materialHelp">Na het invullen van het merk worden alleen eerder gebruikte types van datzelfde merk voorgesteld.</div></div><input type="hidden" id="editMachine" value="70 W diode-laser"><datalist id="machineBrandDatalist"></datalist><datalist id="machineModelDatalist"></datalist><div class="field span3"><label>Opmerking</label><textarea id="editNote" rows="4"></textarea></div><div class="span3 check"><input type="checkbox" id="editTested"><label for="editTested" style="margin:0;text-transform:none;font-size:13px;color:var(--text)">Deze instelling is fysiek getest en bevestigd</label></div></div></div><div class="modalFoot"><button type="button" class="btn secondary" data-close="editorBackdrop">Annuleren</button><button type="submit" class="btn secondary hidden" id="saveAsCopyBtn">Origineel behouden + nieuw</button><button type="submit" class="btn primary" id="saveEditorBtn">Opslaan</button></div></form></div></div>
+<div class="modalBackdrop hidden" id="editorBackdrop">
+  <div class="modal lg">
+    <div class="modalHead">
+      <h2 id="editorTitle">Instelling</h2>
+      <button class="modalClose" data-close="editorBackdrop">×</button>
+    </div>
+    <form id="editorForm">
+      <div class="modalBody">
+        <div class="editorSections">
+          <div id="editorSafety"></div>
+
+          <section class="editorSection editorSectionWattage">
+            <div class="editorSectionTitle">Wattage</div>
+            <div class="editorSectionGrid">
+              <div class="field">
+                <label>Laservermogen</label>
+                <select id="editLaserWatt">
+                  <option value="10">10 W</option>
+                  <option value="20">20 W</option>
+                  <option value="40">40 W</option>
+                  <option value="70">70 W</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section class="editorSection editorSectionMaterial">
+            <div class="editorSectionTitle">Materiaal</div>
+            <div class="editorSectionGrid">
+              <div class="field">
+                <label>Materiaalkeuze</label>
+                <select id="editMaterialMode">
+                  <option value="existing">Bestaand materiaal</option>
+                  <option value="new">Nieuw materiaal</option>
+                </select>
+              </div>
+
+              <div class="field span2" id="editMaterialExistingWrap">
+                <label>Materiaal</label>
+                <select id="editMaterialSelect"><option value="">Kies materiaal…</option></select>
+              </div>
+
+              <div class="field span2 hidden" id="editMaterialNewWrap">
+                <label>Naam nieuw materiaal</label>
+                <input id="editMaterialNew" autocomplete="off" placeholder="bv. Plexiglas rood transparant">
+                <div class="materialHelp">Typ de naam in de huidige interfacetaal. De app vertaalt de naam automatisch naar NL / EN / FR / DE.</div>
+                <div class="field" style="margin-top:12px">
+                  <label>Categorie nieuw materiaal</label>
+                  <input id="editNewMaterialCategory" list="materialCategoryDatalist" autocomplete="off" placeholder="Kies of typ een categorie">
+                  <div class="materialHelp">Kies een bestaande categorie of typ een nieuwe categorie. De gekozen categorie wordt automatisch vertaald en centraal opgeslagen.</div>
+                </div>
+              </div>
+
+              <input type="hidden" id="editMaterial">
+              <datalist id="materialDatalist"></datalist>
+
+              <div class="field"><label>Bewerking</label><select id="editOperation"><option>Snijden</option><option>Graveren</option></select></div>
+              <div class="field"><label>Dikte (mm)</label><input id="editThickness" type="number" min="0" step="0.1"></div>
+              <div class="field"><label>Vermogen (%)</label><input id="editPower" type="number" min="0" max="100" step="1" required></div>
+              <div class="field"><label>Effectief vermogen</label><input id="editEffective" readonly></div>
+              <div class="field"><label>Snelheid (mm/min)</label><input id="editSpeed" type="number" min="0" step="1"></div>
+              <div class="field"><label>Aantal passes</label><input id="editPasses" type="number" min="1" step="1"></div>
+              <div class="field"><label>Air Assist</label><input id="editAir"></div>
+
+              <div class="field">
+                <label>Bron</label>
+                <select id="editSource">
+                  <option>Samengestelde referentie</option>
+                  <option>Acacia-referentie · materiaalfactor</option>
+                  <option>Afgeleid startpunt · fabrikantreferenties</option>
+                  <option>Fabrikant</option>
+                  <option>Forum / praktijk</option>
+                  <option>Eigen test</option>
+                  <option>Eigen instelling</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Betrouwbaarheid</label>
+                <select id="editReliability">
+                  <option>Gemiddeld</option>
+                  <option>Hoog</option>
+                  <option>Experimenteel</option>
+                </select>
+              </div>
+
+              <div class="field span3"><label>Opmerking</label><textarea id="editNote" rows="4"></textarea></div>
+
+              <div class="check editorTestedRow">
+                <input type="checkbox" id="editTested">
+                <label for="editTested" style="margin:0;text-transform:none;font-size:13px;color:var(--text)">Deze instelling is fysiek getest en bevestigd</label>
+              </div>
+            </div>
+          </section>
+
+          <section class="editorSection editorSectionMachine">
+            <div class="editorSectionTitle">Graveertoestel</div>
+            <div class="editorSectionGrid">
+              <div class="field">
+                <label>Merk graveertoestel</label>
+                <input id="editMachineBrand" list="machineBrandDatalist" autocomplete="off" placeholder="Typ of kies een merk…">
+                <div class="materialHelp">Vrije tekst is mogelijk. Bestaande merken verschijnen automatisch als suggestie.</div>
+              </div>
+              <div class="field">
+                <label>Type / model graveertoestel</label>
+                <input id="editMachineModel" list="machineModelDatalist" autocomplete="off" placeholder="Typ of kies een type/model…">
+                <div class="materialHelp">Na het invullen van het merk worden alleen eerder gebruikte types van datzelfde merk voorgesteld.</div>
+              </div>
+              <input type="hidden" id="editMachine" value="70 W diode-laser">
+              <datalist id="machineBrandDatalist"></datalist>
+              <datalist id="machineModelDatalist"></datalist>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="modalFoot">
+        <button type="button" class="btn secondary" data-close="editorBackdrop">Annuleren</button>
+        <button type="submit" class="btn secondary hidden" id="saveAsCopyBtn">Origineel behouden + nieuw</button>
+        <button type="submit" class="btn primary" id="saveEditorBtn">Opslaan</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div class="modalBackdrop hidden" id="detailBackdrop"><div class="modal lg"><div class="modalHead"><h2>Instellingdetails</h2><button class="modalClose" data-close="detailBackdrop">×</button></div><div class="modalBody" id="detailBody"></div><div class="modalFoot" id="detailFoot"></div></div></div>
 <div class="modalBackdrop hidden" id="confirmBackdrop"><div class="modal sm"><div class="modalHead"><h2 id="confirmTitle">Bevestigen</h2><button class="modalClose" data-close="confirmBackdrop">×</button></div><div class="modalBody"><div class="confirmIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg></div><div id="confirmMessage" class="confirmText"></div><div class="field hidden" id="confirmTypeWrap"><label>Typ <span class="confirmCode">VERWIJDER</span></label><input id="confirmType" autocomplete="off" placeholder="VERWIJDER"></div></div><div class="modalFoot"><button class="btn secondary" data-close="confirmBackdrop">Annuleren</button><button class="btn danger" id="confirmOk">Bevestigen</button></div></div></div>
@@ -545,7 +685,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.24-dev';
+const APP_VERSION='2.3.25-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
