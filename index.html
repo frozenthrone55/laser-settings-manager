@@ -466,7 +466,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.19-dev';
+const APP_VERSION='2.3.20-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -1501,6 +1501,7 @@ function loadState(){try{const s=JSON.parse(localStorage.getItem(STATE_KEY));if(
 let state=loadState();LASER_PROFILES=[...new Set([...BASE_LASER_PROFILES,...((state.laserProfiles||[]).map(Number).filter(v=>Number.isFinite(v)&&v>0))])].sort((a,b)=>a-b);let rows=[];let currentUser={id:'usr-admin',username:'Admin',role:'admin'};let currentPage=1;let editingId=null;let selectedTest=null;let confirmAction=null;let editingUserId=null;
 const SEARCH_MATERIAL_CACHE=new Map();
 const SEARCH_ROW_CACHE=new Map();
+const SEARCH_QUERY_MATERIAL_CACHE=new Map();
 let filterSearchTimer=0;
 function materialRenameMap(){return centralMode?centralMaterialRenames:(state.materialRenames||{})}
 function resolveMaterialCanonical(value,map=materialRenameMap()){let cur=txt(value),seen=new Set();for(let i=0;i<30&&map&&map[cur]&&!seen.has(cur);i++){seen.add(cur);cur=txt(map[cur])}return cur}
@@ -2636,6 +2637,7 @@ function exactMaterialForQuery(q){
 function clearSearchCaches(){
   SEARCH_MATERIAL_CACHE.clear();
   SEARCH_ROW_CACHE.clear();
+  SEARCH_QUERY_MATERIAL_CACHE.clear();
 }
 
 function materialSearchMeta(material){
@@ -2698,9 +2700,10 @@ function searchHaystackForRow(r){
   const cached=SEARCH_ROW_CACHE.get(cacheKey);
   if(cached!==undefined)return cached;
 
-  const materialMeta=materialSearchMeta(r.materiaal);
-  const values=[
-    materialMeta.normalizedAliases,
+  // Deze fallback is bewust licht. Materiaalnamen, categorieën,
+  // vertalingen en profielvelden worden op materiaalniveau afgehandeld.
+  const hay=normalizeSearchText([
+    r.materiaal,
     r.bewerking,
     r.opmerking,
     r.source,
@@ -2712,20 +2715,45 @@ function searchHaystackForRow(r){
     r.createdByName,
     r.createdByEmail,
     r.updatedByName
-  ];
+  ].filter(Boolean).join(' '));
 
-  for(const lang of I18N_LANGS){
-    values.push(
-      trExact(r.bewerking,lang),
-      trExact(r.source,lang),
-      trExact(r.reliability,lang),
-      trExact(status,lang)
-    );
-  }
-
-  const hay=normalizeSearchText(values.filter(Boolean).join(' '));
   SEARCH_ROW_CACHE.set(cacheKey,hay);
   return hay;
+}
+
+function matchingMaterialsForContext(ctx){
+  if(!ctx?.terms?.length)return null;
+
+  const key=[
+    currentLanguage,
+    ctx.terms.join('\u0001')
+  ].join('\u0002');
+
+  if(SEARCH_QUERY_MATERIAL_CACHE.has(key)){
+    return SEARCH_QUERY_MATERIAL_CACHE.get(key);
+  }
+
+  const matches=[];
+  for(const material of unique('materiaal')){
+    const meta=materialSearchMeta(material);
+    if(ctx.terms.every(term=>meta.normalizedAliases.includes(term))){
+      matches.push({
+        material,
+        rank:searchRankForMaterial(material,ctx)
+      });
+    }
+  }
+
+  matches.sort((a,b)=>
+    a.rank-b.rank ||
+    translatedMaterialName(a.material,currentLanguage).localeCompare(
+      translatedMaterialName(b.material,currentLanguage),
+      currentLocale()
+    )
+  );
+
+  SEARCH_QUERY_MATERIAL_CACHE.set(key,matches);
+  return matches;
 }
 
 function buildSearchContext(q){
@@ -2801,44 +2829,64 @@ function filteredRows(){
   const pw=$('filterPower').value;
   const st=$('filterStatus').value;
   const rel=$('filterReliability').value;
-  const ctx=q&&!exact?buildSearchContext(q):null;
 
-  if(q&&!exact){
+  const passesFilters=r=>{
+    if(lw&&String(r.laserWatt)!==lw)return false;
+    if(th&&String(r.dikte)!==th)return false;
+    if(op&&r.bewerking!==op)return false;
+    if(pw&&String(r.vermogen)!==pw)return false;
+    if(st&&statusOf(r)!==st)return false;
+    if(rel&&r.reliability!==rel)return false;
+    return true;
+  };
+
+  if(exact){
+    if(!exactMaterial)return [];
+    return rows.filter(r=>r.materiaal===exactMaterial&&passesFilters(r));
+  }
+
+  if(!q){
+    return rows.filter(passesFilters);
+  }
+
+  const ctx=buildSearchContext(q);
+  const materialMatches=matchingMaterialsForContext(ctx);
+
+  // SNEL PAD:
+  // Als woorden in de zoekopdracht overeenkomen met materiaalnaam,
+  // vertaling, categorie of materiaaleigenschappen, hoeven we niet
+  // door de vrije tekst van alle 38.000 instellingen te zoeken.
+  if(materialMatches&&materialMatches.length){
+    const rankByMaterial=new Map(
+      materialMatches.map(item=>[item.material,item.rank])
+    );
     const buckets=Array.from({length:11},()=>[]);
-    const rankCache=new Map();
 
     for(const r of rows){
-      // Goedkope filters eerst, vóór de tekstindex wordt geraadpleegd.
-      if(lw&&String(r.laserWatt)!==lw)continue;
-      if(th&&String(r.dikte)!==th)continue;
-      if(op&&r.bewerking!==op)continue;
-      if(pw&&String(r.vermogen)!==pw)continue;
-      if(st&&statusOf(r)!==st)continue;
-      if(rel&&r.reliability!==rel)continue;
-      if(!matchesSmartContext(r,ctx))continue;
-
-      let rank=rankCache.get(r.materiaal);
-      if(rank===undefined){
-        rank=searchRankForMaterial(r.materiaal,ctx);
-        rankCache.set(r.materiaal,rank);
-      }
+      const rank=rankByMaterial.get(r.materiaal);
+      if(rank===undefined)continue;
+      if(ctx.mm!==null&&Number(r.dikte)!==ctx.mm)continue;
+      if(ctx.pct!==null&&Number(r.vermogen)!==ctx.pct)continue;
+      if(ctx.op&&r.bewerking!==ctx.op)continue;
+      if(!passesFilters(r))continue;
       buckets[Math.max(0,Math.min(10,rank))].push(r);
     }
-
-    // rows zijn reeds sortRows-gesorteerd. Door per relevantiebak te
-    // verzamelen vermijden we een zware n log n-sortering.
     return buckets.flat();
   }
 
-  return rows.filter(r=>
-    (exact?(exactMaterial!==null&&r.materiaal===exactMaterial):true)&&
-    (!lw||String(r.laserWatt)===lw)&&
-    (!th||String(r.dikte)===th)&&
-    (!op||r.bewerking===op)&&
-    (!pw||String(r.vermogen)===pw)&&
-    (!st||statusOf(r)===st)&&
-    (!rel||r.reliability===rel)
-  );
+  // VRIJE-TEKST FALLBACK:
+  // Alleen wanneer er echt geen materiaal/category/profile match is.
+  const result=[];
+  for(const r of rows){
+    if(ctx.mm!==null&&Number(r.dikte)!==ctx.mm)continue;
+    if(ctx.pct!==null&&Number(r.vermogen)!==ctx.pct)continue;
+    if(ctx.op&&r.bewerking!==ctx.op)continue;
+    if(!passesFilters(r))continue;
+    if(!ctx.terms.length||ctx.terms.every(term=>searchHaystackForRow(r).includes(term))){
+      result.push(r);
+    }
+  }
+  return result;
 }
 function activeFilters(){return $('filterExactMaterial').checked||['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].some(id=>txt($(id).value).trim()!=='')}
 function fillOptions(){clearSearchCaches();const mats=unique('materiaal').sort((a,b)=>translatedMaterialName(a,currentLanguage).localeCompare(translatedMaterialName(b,currentLanguage),currentLocale()));fillMaterialCategoryOptions();fillEditorMaterialSelect($('editMaterialSelect')?.value||'');fillSearchMaterialDatalist();const laserOptions=LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');const currentFilter=$('filterLaserWatt').value,currentEdit=$('editLaserWatt').value,currentTest=$('testLaserWatt').value;$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+laserOptions;$('editLaserWatt').innerHTML=laserOptions;$('testLaserWatt').innerHTML=laserOptions;if(LASER_PROFILES.map(String).includes(currentFilter))$('filterLaserWatt').value=currentFilter;if(LASER_PROFILES.map(String).includes(currentEdit))$('editLaserWatt').value=currentEdit;else $('editLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);if(LASER_PROFILES.map(String).includes(currentTest))$('testLaserWatt').value=currentTest;else $('testLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);$('filterOperation').innerHTML=`<option value="">${esc(tr('Alle'))}</option>`+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(tr(v))}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(translatedMaterialName(v))}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');const sub=document.querySelector('.brandsub');if(sub)sub.textContent=LASER_PROFILES.map(v=>`${v} W`).join(' · ')}
@@ -3257,7 +3305,7 @@ function scheduleFilterSearch(){
   filterSearchTimer=setTimeout(()=>{
     currentPage=1;
     renderSettings();
-  },100);
+  },60);
 }
 $('filterSearch').addEventListener('input',scheduleFilterSearch);
 $('filterSearch').addEventListener('keydown',e=>{
