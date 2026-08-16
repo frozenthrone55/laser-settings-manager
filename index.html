@@ -466,7 +466,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.21-dev';
+const APP_VERSION='2.3.22-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -1745,8 +1745,10 @@ async function migrateLocalMaterialMetadataToCentral(serverProfiles,serverCatego
 async function refreshCentralSettings({silent=false,force=false}={}){
   if(centralSyncBusy&&!force)return false;
   centralSyncBusy=true;
+  let apiReached=false;
   try{
     const data=await centralApi('GET');
+    apiReached=true;
     centralApiVersion=txt(data.version||centralApiVersion);
 
     const next={
@@ -1826,9 +1828,19 @@ async function refreshCentralSettings({silent=false,force=false}={}){
     updateStorageInfo();
     return true;
   }catch(e){
+    if(apiReached){
+      // De API heeft succesvol geantwoord. Een fout bij lokale verwerking
+      // of rendering mag daarom nooit als "Database offline" worden getoond.
+      console.error('Centrale database verbonden, lokale verwerking mislukt',e);
+      setSyncStatus('online','Online');
+      try{renderSystemHealth()}catch{}
+      if(!silent)toast('Database is online, maar het scherm kon niet volledig worden vernieuwd: '+e.message,'bad');
+      return true;
+    }
+
     console.warn('Centrale database',e);
     setSyncStatus('offline','Database offline');
-    renderSystemHealth();
+    try{renderSystemHealth()}catch{}
     if(!silent)toast('Centrale database niet bereikbaar: '+e.message,'bad');
     return false;
   }finally{
@@ -3330,14 +3342,33 @@ function portableState(){return {favorites:state.favorites,history:state.history
 function downloadPortable(){const cloneDoc=document.documentElement.cloneNode(true);const newId='lsm70-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);cloneDoc.querySelector('meta[name="app-instance"]').setAttribute('content',newId);const key=getClerkKey();cloneDoc.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content',key||'');cloneDoc.querySelector('#seed-data').textContent=JSON.stringify(centralMode?BASE:rows).replace(/<\//g,'<\\/');cloneDoc.querySelector('#portable-state').textContent=JSON.stringify(portableState()).replace(/<\//g,'<\\/');cloneDoc.querySelectorAll('.modalBackdrop').forEach(e=>e.classList.add('hidden'));cloneDoc.querySelector('#loginScreen').classList.remove('hidden');download('index.html','text/html;charset=utf-8','<!doctype html>\n'+cloneDoc.outerHTML)}
 async function resetDatabase(){if(useCentralWrites())return toast('Centrale database herstellen is geblokkeerd om gedeelde gegevens niet per ongeluk te wissen.','bad');const ok=await askConfirm({title:'Ingebouwde database herstellen',message:'Alle lokale wijzigingen, toevoegingen en verwijderingen worden teruggezet naar de database die in dit HTML-bestand is ingebouwd. Favorieten blijven bestaan voor nog aanwezige rijen.<br><br>Typ VERWIJDER om door te gaan.',typed:true,okText:'Herstellen'});if(!ok)return;rows=BASE.map(clone);state.patch={upserts:[],deleted:[]};state.favorites=state.favorites.filter(id=>BASE_MAP.has(id));addHistory('reset','Ingebouwde database hersteld',null,null,false);saveState();fillOptions();renderAll();toast('Database hersteld')}
 function updateStorageInfo(){try{const bytes=new Blob([localStorage.getItem(STATE_KEY)||'']).size;$('storageInfo').textContent=centralMode?`Centrale database actief · lokale voorkeuren ${(bytes/1024).toFixed(1)} KB`:`Lokale modus · compact opgeslagen ${(bytes/1024).toFixed(1)} KB`}catch{}}
-function renderAll(){renderDashboard();renderSettings();renderMaterials();renderMaterialAdmin();renderFavorites();renderAdmin();renderUsers();renderApprovalQueue();renderUserStats();renderAdminPendingBadge();renderSystemHealth();applyRoleUI()}
+function renderAll(){
+  const jobs=[
+    ['dashboard',renderDashboard],
+    ['settings',renderSettings],
+    ['materials',renderMaterials],
+    ['materialAdmin',renderMaterialAdmin],
+    ['favorites',renderFavorites],
+    ['admin',renderAdmin],
+    ['users',renderUsers],
+    ['approvalQueue',renderApprovalQueue],
+    ['userStats',renderUserStats],
+    ['adminPendingBadge',renderAdminPendingBadge],
+    ['systemHealth',renderSystemHealth],
+    ['roleUI',applyRoleUI]
+  ];
+  for(const [name,fn] of jobs){
+    try{fn()}
+    catch(e){console.error(`Renderfout ${name}`,e)}
+  }
+}
 // Events
 initI18n();
 initClerkAuth();
 document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));document.querySelectorAll('[data-viewjump]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.viewjump)));document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.close;if(id==='confirmBackdrop')finishConfirm(false);else closeModal(id)}));document.querySelectorAll('.modalBackdrop').forEach(b=>b.addEventListener('click',e=>{if(e.target===b){if(b.id==='confirmBackdrop')finishConfirm(false);else closeModal(b.id)}}));
 $('confirmOk').onclick=()=>{if(!$('confirmTypeWrap').classList.contains('hidden')){const typed=$('confirmType').value.trim().toUpperCase();const allowed=['VERWIJDER',trExact('VERWIJDER').toUpperCase()];if(!allowed.includes(typed))return toast('Typ exact VERWIJDER om verder te gaan.','bad')}finishConfirm(true)};
 $('refreshUsersBtn').onclick=()=>refreshCentralMeta();$('saveUserBtn').onclick=saveUser;$('historyCsvBtn').onclick=exportCentralHistoryCsv;$('historyRefreshBtn').onclick=()=>refreshCentralMeta();$('historySearch').oninput=renderHistory;$('historyTypeFilter').onchange=renderHistory;$('centralBackupBtn').onclick=exportCentralBackup;$('copySystemReportBtn').onclick=copySystemReport;$('mobileMenu').onclick=()=>$('sidebar').classList.toggle('open');$('lockBtn').onclick=logout;$('helpBtn').onclick=()=>openModal('helpBackdrop');$('saveClerkKeyBtn').onclick=()=>{const key=$('clerkKeyInput').value.trim();if(!key.startsWith('pk_'))return toast('Gebruik de Clerk Publishable Key die met pk_ begint.','bad');localStorage.setItem(CLERK_KEY_STORAGE,key);document.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content',key);toast('Clerk gekoppeld. index.html wordt aangemaakt.');setTimeout(downloadPortable,150)};$('resetClerkKeyBtn').onclick=()=>{localStorage.removeItem(CLERK_KEY_STORAGE);document.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content','');location.reload()};
-$('dashNew').onclick=()=>openEditor();$('dashTest').onclick=()=>showView('tests');$('newRowBtn').onclick=()=>openEditor();$('bulkDeleteBtn').onclick=bulkDelete;$('exportCsvBtn').onclick=exportCsv;$('backupBtn').onclick=exportBackup;$('portableBtn').onclick=downloadPortable;$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value=''};
+$('dashNew').onclick=()=>openEditor();$('dashTest').onclick=()=>showView('tests');$('newRowBtn').onclick=()=>openEditor();$('bulkDeleteBtn').onclick=bulkDelete;$('exportCsvBtn').onclick=exportCsv;$('backupBtn').onclick=exportBackup;$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value=''};
 function scheduleFilterSearch(){
   clearTimeout(filterSearchTimer);
   filterSearchTimer=setTimeout(()=>{
@@ -3388,6 +3419,6 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&centralMo
 window.addEventListener('focus',()=>{if(centralMode&&window.Clerk?.user)refreshCentralSettings({silent:true})});
 $('materialAdminSearch').oninput=renderMaterialAdmin;$('refreshMaterialAdminBtn').onclick=()=>refreshCentralSettings({silent:true,force:true});$('manageMaterialAction').onchange=updateMaterialManageMode;$('saveMaterialManageBtn').onclick=saveMaterialManage;$('addAdminCategoryBtn').onclick=addAdminCategory;$('saveCategoryEditBtn').onclick=saveCategoryEdit;$('saveCategoryMergeBtn').onclick=saveCategoryMerge;$('addLaserProfileBtn').onclick=addLaserProfile;$('materialSearch').oninput=renderMaterials;$('saveMaterialProfileBtn').onclick=saveMaterialProfile;$('translateMaterialProfileBtn').onclick=translateMaterialDraft;$('materialEditLanguage').onchange=e=>{saveCurrentMaterialLanguageDraft();loadMaterialLanguageDraft(e.target.value);$('materialTranslationStatus').textContent=tr('Kies hierboven een taal om de vertaling handmatig na te kijken of aan te passen.')};$('materialEditLocalizedName').addEventListener('input',()=>{saveCurrentMaterialLanguageDraft();refreshMaterialDatabaseNamePreview()});$('materialEditVisualMode').onchange=updateMaterialVisualModeUI;$('materialEditImageUrl').oninput=previewMaterialImage;$('materialEditImageFile').onchange=e=>handleMaterialFileSelect(e.target.files&&e.target.files[0]);$('materialEditRalCode').onchange=syncRalFromCode;$('materialEditRalCode').oninput=previewMaterialImage;$('materialEditRalHex').oninput=previewMaterialImage;$('materialEditTransparentTint').oninput=previewMaterialImage;$('materialEditTransparentOpacity').oninput=previewMaterialImage;$('testLaserWatt').onchange=suggestTestCenter;$('testMaterial').onchange=()=>{updateTestSafety();suggestTestCenter()};$('testOperation').onchange=refreshTestInputs;$('testThickness').onchange=suggestTestCenter;$('generateTestBtn').onclick=generateTest;$('saveTestWinnerBtn').onclick=saveTestWinner;
 $('editMaterialMode').addEventListener('change',updateEditorMaterialMode);$('editMaterialSelect').addEventListener('change',updateEditorMaterialMode);$('editMaterialNew').addEventListener('input',updateEditorMaterialMode);$('editNewMaterialCategory').addEventListener('focus',fillMaterialCategoryOptions);$('editLaserWatt').addEventListener('change',updateEditorSafety);$('editPower').addEventListener('input',updateEditorSafety);$('editOperation').addEventListener('change',()=>{$('editThickness').disabled=$('editOperation').value==='Graveren'});$('editorForm').addEventListener('submit',async e=>{e.preventDefault();let r=editorRow(),err=validateEditor(r);if(err)return toast(err,'bad');const copy=e.submitter?.id==='saveAsCopyBtn'||$('saveEditorBtn').dataset.forceCopy==='1';const action=copy?'duplicate':editingId?'edit':'add';if(!can(action))return toast('Je rol mag alleen nieuwe waarden toevoegen. Bestaande waarden wijzigen of verwijderen is niet toegestaan.','bad');const addingBrandNewMaterial=!editingId&&!copy&&$('editMaterialMode').value==='new';if(addingBrandNewMaterial){const existing=editorMaterialExistsByAnyLanguage(r.materiaal);if(existing)return toast('Dit materiaal bestaat al. Kies Bestaand materiaal om dubbele materialen te voorkomen.','bad');const categoryLabel=$('editNewMaterialCategory').value.trim();if(!categoryLabel)return toast('Categorie van nieuw materiaal is verplicht.','bad');let newCategoryKey='';try{newCategoryKey=await resolveOrCreateCategory(categoryLabel,currentLanguage)}catch(e){return toast(e.message||'Categorievertaling mislukt. Controleer of de vertaalfunctie online is.','bad')}const translated=await translateNewMaterialName(r.materiaal,currentLanguage,newCategoryKey);if(!translated)return;r=editorRow()}if(useCentralWrites()){try{let data;if(editingId&&!copy){const i=rows.findIndex(x=>x.id===editingId);const before=i>=0?clone(rows[i]):null;data=await centralUpdateSetting(editingId,r,before)}else{data=await centralAddSetting(r)}await refreshCentralSettings({silent:true,force:true});if(can('admin'))await refreshCentralMeta();closeModal('editorBackdrop');toast(data.pendingApproval?'Instelling opgeslagen en wacht op goedkeuring':'Instelling centraal opgeslagen')}catch(e){toast(e.message,'bad')}return}if(editingId&&!copy){const i=rows.findIndex(x=>x.id===editingId);const before=clone(rows[i]);rows[i]=normalizeRow({...rows[i],...r,...auditForEdit()});addHistory('edit','Instelling gewijzigd: '+rowLabel(rows[i]),before,clone(rows[i]),true)}else{const nr=normalizeRow({...r,id:'u-'+Date.now()+'-'+Math.random().toString(36).slice(2),...auditForNew()});rows.push(nr);addHistory('add','Instelling toegevoegd: '+rowLabel(nr),null,clone(nr),true)}rows.sort(sortRows);saveState();fillOptions();closeModal('editorBackdrop');renderAll();toast('Instelling opgeslagen')});
-$('adminBackup').onclick=()=>centralMode&&can('admin')?exportCentralBackup():exportBackup();$('adminBackup2').onclick=()=>centralMode&&can('admin')?exportCentralBackup():exportBackup();$('adminCsv').onclick=exportCsv;$('adminImport').onclick=()=>$('importFile').click();$('adminPortable').onclick=downloadPortable;$('resetBtn').onclick=resetDatabase;document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{const q=b.dataset.quick;if(q==='search')showView('settings');if(q==='test')showView('tests');if(q==='favorites')showView('favorites');if(q==='backup'){if(centralMode&&can('admin'))exportCentralBackup();else exportBackup()}});
+$('adminBackup').onclick=()=>centralMode&&can('admin')?exportCentralBackup():exportBackup();$('adminBackup2').onclick=()=>centralMode&&can('admin')?exportCentralBackup():exportBackup();$('adminCsv').onclick=exportCsv;$('adminImport').onclick=()=>$('importFile').click();$('resetBtn').onclick=resetDatabase;document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{const q=b.dataset.quick;if(q==='search')showView('settings');if(q==='test')showView('tests');if(q==='favorites')showView('favorites');if(q==='backup'){if(centralMode&&can('admin'))exportCentralBackup();else exportBackup()}});
 </script>
 </body></html>
