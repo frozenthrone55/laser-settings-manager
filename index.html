@@ -466,7 +466,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.12-dev';
+const APP_VERSION='2.3.13-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -615,10 +615,40 @@ function translateDom(root=document.body){
   document.title=trExact('Instellingen diodelasers')+' · 10 W · 20 W · 40 W · 70 W';
   document.querySelectorAll('.langSelect').forEach(s=>{if(s.value!==currentLanguage)s.value=currentLanguage});
 }
+
+function fillSearchMaterialDatalist(){
+  const list=$('materialDatalist');
+  if(!list||typeof rows==='undefined')return;
+  const mats=unique('materiaal').sort((a,b)=>
+    translatedMaterialName(a,currentLanguage).localeCompare(
+      translatedMaterialName(b,currentLanguage),
+      currentLocale()
+    )
+  );
+  list.innerHTML=mats.map(material=>
+    `<option value="${esc(translatedMaterialName(material,currentLanguage))}"></option>`
+  ).join('');
+}
+
+function translateExactMaterialSearchValue(input){
+  if(!input||typeof rows==='undefined')return;
+  const value=txt(input.value).trim();
+  if(!value)return;
+  const material=exactMaterialForQuery(value);
+  if(material)input.value=translatedMaterialName(material,currentLanguage);
+}
+
+function refreshSearchLanguageValues(){
+  fillSearchMaterialDatalist();
+  translateExactMaterialSearchValue($('filterSearch'));
+  translateExactMaterialSearchValue($('globalSearch'));
+}
+
 function setLanguage(lang,{persist=true}={}){
   if(!I18N_LANGS.includes(lang))lang='nl';
   currentLanguage=lang;
   if(persist)localStorage.setItem(I18N_STORAGE_KEY,lang);
+  refreshSearchLanguageValues();
   translateDom(document.body);
   // Rerender dynamische delen zodat datum- en getalnotatie de gekozen locale volgt.
   if(typeof renderAll==='function'&&typeof rows!=='undefined'&&rows?.length){
@@ -628,7 +658,10 @@ function setLanguage(lang,{persist=true}={}){
       if(typeof fillMaterialCategoryOptions==='function')fillMaterialCategoryOptions();if(typeof fillEditorMaterialSelect==='function')fillEditorMaterialSelect($('editMaterialSelect')?.value||'');if(typeof activeMaterialName!=='undefined'&&activeMaterialName&&document.getElementById('materialBackdrop')&&!document.getElementById('materialBackdrop').classList.contains('hidden'))openMaterial(activeMaterialName);if(typeof materialEditDraft!=='undefined'&&materialEditDraft&&document.getElementById('materialEditBackdrop')&&!document.getElementById('materialEditBackdrop').classList.contains('hidden')){$('materialEditCategory').value=categoryLabelByKey(categoryKeyForMaterial($('materialEditName').value),currentLanguage)}
     }catch(e){console.warn('i18n rerender',e)}
   }
-  setTimeout(()=>translateDom(document.body),0);
+  setTimeout(()=>{
+    refreshSearchLanguageValues();
+    translateDom(document.body);
+  },0);
 }
 function initI18n(){
   currentLanguage=detectLanguage();
@@ -2274,9 +2307,7 @@ function exactMaterialForQuery(q){
   return materials.find(material=>{
     const aliases=[
       material,
-      translatedMaterialName(material,'en'),
-      translatedMaterialName(material,'fr'),
-      translatedMaterialName(material,'de')
+      ...I18N_LANGS.map(lang=>translatedMaterialName(material,lang))
     ];
     return aliases.some(name=>normalizeSearchText(name)===needle);
   })||null;
@@ -2334,7 +2365,7 @@ function matchesSmart(r,q){
 }
 function filteredRows(){const q=$('filterSearch').value.trim(),exact=$('filterExactMaterial').checked,exactMaterial=exact?exactMaterialForQuery(q):null,lw=$('filterLaserWatt').value,th=$('filterThickness').value,op=$('filterOperation').value,pw=$('filterPower').value,st=$('filterStatus').value,rel=$('filterReliability').value;return rows.filter(r=>(exact?(exactMaterial!==null&&r.materiaal===exactMaterial):matchesSmart(r,q))&&(!lw||String(r.laserWatt)===lw)&&(!th||String(r.dikte)===th)&&(!op||r.bewerking===op)&&(!pw||String(r.vermogen)===pw)&&(!st||statusOf(r)===st)&&(!rel||r.reliability===rel)).sort(sortRows)}
 function activeFilters(){return $('filterExactMaterial').checked||['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].some(id=>txt($(id).value).trim()!=='')}
-function fillOptions(){const mats=unique('materiaal').sort((a,b)=>a.localeCompare(b,'nl'));fillMaterialCategoryOptions();fillEditorMaterialSelect($('editMaterialSelect')?.value||'');$('materialDatalist').innerHTML=mats.map(v=>`<option value="${esc(v)}"></option>`).join('');const laserOptions=LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');const currentFilter=$('filterLaserWatt').value,currentEdit=$('editLaserWatt').value,currentTest=$('testLaserWatt').value;$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+laserOptions;$('editLaserWatt').innerHTML=laserOptions;$('testLaserWatt').innerHTML=laserOptions;if(LASER_PROFILES.map(String).includes(currentFilter))$('filterLaserWatt').value=currentFilter;if(LASER_PROFILES.map(String).includes(currentEdit))$('editLaserWatt').value=currentEdit;else $('editLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);if(LASER_PROFILES.map(String).includes(currentTest))$('testLaserWatt').value=currentTest;else $('testLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);$('filterOperation').innerHTML='<option value="">Alle</option>'+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(translatedMaterialName(v))}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');const sub=document.querySelector('.brandsub');if(sub)sub.textContent=LASER_PROFILES.map(v=>`${v} W`).join(' · ')}
+function fillOptions(){const mats=unique('materiaal').sort((a,b)=>translatedMaterialName(a,currentLanguage).localeCompare(translatedMaterialName(b,currentLanguage),currentLocale()));fillMaterialCategoryOptions();fillEditorMaterialSelect($('editMaterialSelect')?.value||'');fillSearchMaterialDatalist();const laserOptions=LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');const currentFilter=$('filterLaserWatt').value,currentEdit=$('editLaserWatt').value,currentTest=$('testLaserWatt').value;$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+laserOptions;$('editLaserWatt').innerHTML=laserOptions;$('testLaserWatt').innerHTML=laserOptions;if(LASER_PROFILES.map(String).includes(currentFilter))$('filterLaserWatt').value=currentFilter;if(LASER_PROFILES.map(String).includes(currentEdit))$('editLaserWatt').value=currentEdit;else $('editLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);if(LASER_PROFILES.map(String).includes(currentTest))$('testLaserWatt').value=currentTest;else $('testLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);$('filterOperation').innerHTML='<option value="">Alle</option>'+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(translatedMaterialName(v))}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');const sub=document.querySelector('.brandsub');if(sub)sub.textContent=LASER_PROFILES.map(v=>`${v} W`).join(' · ')}
 function num(v,unit=''){if(v===''||v===null||v===undefined)return '<span style="color:#9aa5b5">—</span>';return `${Number(v).toLocaleString(currentLocale(),{maximumFractionDigits:1})}${unit}`}
 function renderSettings(){const data=filteredRows(),ps=Number($('pageSize').value)||100,pages=Math.max(1,Math.ceil(data.length/ps));if(currentPage>pages)currentPage=pages;const start=(currentPage-1)*ps,shown=data.slice(start,start+ps);$('resultCount').textContent=`${data.length.toLocaleString(currentLocale())} van ${rows.length.toLocaleString(currentLocale())} instellingen`;$('bulkDeleteBtn').disabled=!can('admin')||!activeFilters()||!data.length;$('bulkDeleteBtn').textContent=activeFilters()?`Bulk verwijderen (${data.length.toLocaleString(currentLocale())})`:'Bulk verwijderen';$('settingsBody').innerHTML=shown.length?shown.map(r=>`<tr><td><button class="star ${state.favorites.includes(r.id)?'on':''}" onclick="toggleFavorite('${r.id}')" title="Favoriet">★</button></td><td>${statusPill(r)}</td><td class="num"><strong>${Number(r.laserWatt)||70} W</strong></td><td><span class="pill ${r.bewerking==='Snijden'?'opCut':'opEngrave'}">${esc(r.bewerking)}</span></td><td><strong>${esc(translatedMaterialName(r.materiaal))}</strong></td><td class="num">${r.dikte!==''?num(r.dikte,' mm'):'—'}</td><td class="num">${num(r.vermogen,'%')}</td><td class="num">${num(r.effectief,' W')}</td><td class="num">${r.snelheid!==''?num(r.snelheid,' mm/min'):'—'}</td><td class="num">${r.passes!==''?num(r.passes):'—'}</td><td>${relPill(r)}</td><td class="actions"><button class="btn secondary sm" onclick="openDetails('${r.id}')">Details</button>${can('edit')?` <button class="btn secondary sm" onclick="openEditor('${r.id}')">Wijzig</button>`:''}${can('admin')?` <button class="btn danger sm" onclick="deleteRow('${r.id}')">Verwijder</button>`:''}</td></tr>`).join(''):`<tr><td colspan="12" class="empty">Geen instellingen gevonden. Pas de filters aan.</td></tr>`;$('pageInfo').textContent=data.length?`Pagina ${currentPage} van ${pages} · ${start+1}–${Math.min(start+ps,data.length)}`:'Geen resultaten';$('prevPage').disabled=currentPage<=1;$('nextPage').disabled=currentPage>=pages}
 
