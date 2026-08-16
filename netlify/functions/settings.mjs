@@ -150,6 +150,8 @@ const SETTING_FIELDS = [
   "reliability",
   "tested",
   "machine",
+  "machineBrand",
+  "machineModel",
   "laserWatt",
   "testedAt",
 ];
@@ -337,15 +339,18 @@ function cleanSetting(input = {}) {
   result.opmerking = shortText(result.opmerking, 2500);
   result.source = shortText(result.source || "Eigen instelling", 120);
   result.reliability = shortText(result.reliability || "Gemiddeld", 50);
+  result.machineBrand = shortText(result.machineBrand, 160);
+  result.machineModel = shortText(result.machineModel, 200);
   const parsedLaserWatt =
     Number(result.laserWatt) ||
     Number(String(result.machine || "").match(/(10|20|40|70)\s*W/i)?.[1]) ||
     70;
 
   result.laserWatt = parsedLaserWatt;
+  const explicitMachine = [result.machineBrand, result.machineModel].filter(Boolean).join(" · ");
   result.machine = shortText(
-    result.machine || `${parsedLaserWatt} W diode-laser`,
-    120
+    explicitMachine || result.machine || `${parsedLaserWatt} W diode-laser`,
+    360
   );
 
   const power = Number(result.vermogen);
@@ -1484,7 +1489,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 12,
+        version: 13,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         materialProfiles,
