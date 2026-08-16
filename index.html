@@ -724,7 +724,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.29-dev';
+const APP_VERSION='2.3.30-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -829,6 +829,110 @@ const I18N_AIR_ASSIST_BOOLEAN_SUPPLEMENT={
 };
 for(const lang of ['en','fr','de'])Object.assign(I18N_TRANSLATIONS[lang],I18N_AIR_ASSIST_BOOLEAN_SUPPLEMENT[lang]);
 
+const I18N_REMAINING_UI_AUDIT={
+  en:{
+    "Instellingen diodelasers · 10 W · 20 W · 40 W · 70 W":"Diode laser settings · 10 W · 20 W · 40 W · 70 W",
+    "). Gebruik hier nooit een Secret Key.":"). Never use a Secret Key here.",
+    ". Na verificatie van je e-mailadres krijg je automatisch de rol":". After verifying your email address, you automatically get the role",
+    ": je mag waarden toevoegen, maar niet wijzigen of verwijderen.":": you can add values, but not edit or delete them.",
+    "Beheerders kunnen materialen echt hernoemen of samenvoegen zonder duizenden ingebouwde rijen te kopiëren. De centrale database bewaart een canonieke hernoemingslaag; alle gekoppelde startwaarden en eigen instellingen verschijnen daardoor onder de nieuwe materiaalnaam. Categorieën en extra laserprofielen worden eveneens centraal beheerd.":"Administrators can truly rename or merge materials without copying thousands of built-in rows. The central database keeps a canonical rename layer; all linked start values and custom settings therefore appear under the new material name. Categories and additional laser profiles are also managed centrally.",
+    "Compact opgeslagen: 0.3 KB. Alleen wijzigingen en metadata.":"Compactly stored: 0.3 KB. Changes and metadata only.",
+    "Kies een bestaande categorie of typ een nieuwe categorie. De gekozen categorie wordt automatisch vertaald en centraal opgeslagen.":"Choose an existing category or type a new category. The selected category is translated automatically and stored centrally.",
+    "Meertalige materiaalprofielen:":"Multilingual material profiles:",
+    "Opmerking:":"Note:",
+    "in Instellingen werkt het zoekveld zoals het materiaalveld bij een nieuwe instelling: begin een materiaalnaam te typen en kies uit de voorstellen. Standaard blijft vrije tekst zoeken actief, zodat je ook woorden kunt zoeken die ergens in een materiaalnaam, bron of opmerking voorkomen. Vink":"in Settings, the search field works like the material field when creating a new setting: start typing a material name and choose from the suggestions. Free-text search remains active by default, so you can also search for words appearing anywhere in a material name, source or note. Enable",
+    "aan wanneer je uitsluitend het gekozen materiaal wilt zien; zoeken op “Glas” toont dan bijvoorbeeld niet langer “Douglas”. De globale zoekbalk bovenaan blijft werken met Enter of het vergrootglas en ondersteunt NL, EN, FR en DE.":"when you only want to see the selected material; searching for “Glass”, for example, will then no longer show “Douglas”. The global search bar at the top still works with Enter or the magnifying glass and supports NL, EN, FR and DE.",
+    "de interface ondersteunt Nederlands, English, Français en Deutsch. De taalkeuze wordt per browser onthouden. Ingebouwde materiaalnamen, statussen, veiligheidsmeldingen en standaardnotities worden vertaald voor weergave; vrije notities die gebruikers zelf invoeren blijven in de taal waarin ze zijn geschreven.":"the interface supports Nederlands, English, Français and Deutsch. The language choice is remembered per browser. Built-in material names, statuses, safety messages and standard notes are translated for display; free-form notes entered by users remain in the language in which they were written.",
+    "de interne materiaalnaam volgt automatisch de Nederlandse materiaalnaam. Als die naam verandert, worden bij Opslaan ook alle gekoppelde centrale instellingen en het materiaalprofiel naar de nieuwe naam verhuisd. Bestaat de doelnaam al als een ander materiaal, gebruik dan bewust":"the internal material name automatically follows the Dutch material name. If that name changes, saving also moves all linked central settings and the material profile to the new name. If the target name already exists as another material, deliberately use",
+    "in Materiaalbeheer.":"in Material Management.",
+    "extra wattages zoals 5 W, 22 W, 30 W of 60 W kunnen worden toegevoegd. Hiervoor worden niet automatisch afgeleide startwaarden gegenereerd; je voegt eigen instellingen of materiaaltests toe.":"additional wattages such as 5 W, 22 W, 30 W or 60 W can be added. No derived start values are generated automatically for these; you add your own settings or material tests.",
+    "kiest voor":"choose",
+    "kun je een bestaande categorie kiezen of zelf een nieuwe typen. Nieuwe categorieën worden automatisch naar NL, EN, FR en DE vertaald en verschijnen daarna ook als voorstel bij andere materialen.":"you can choose an existing category or type a new one yourself. New categories are automatically translated into NL, EN, FR and DE and then also appear as suggestions for other materials.",
+    "materiaalprofielen (categorie, RAL-kleur, transparantie, beschrijving, veiligheid en vertalingen) worden op de online versie centraal opgeslagen. Een wijziging op de computer verschijnt daardoor ook op de smartphone na synchronisatie/vernieuwen.":"material profiles (category, RAL colour, transparency, description, safety and translations) are stored centrally in the online version. A change made on the computer therefore also appears on the smartphone after synchronising/refreshing.",
+    "na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm en 20 W / 6 mm plaatmateriaal worden officiële xTool-referenties als minimale energie-ankers gebruikt. 8 mm wordt conservatief vanuit die ankers geëxtrapoleerd en alleen aangeboden wanneer dit binnen de praktische passlimiet blijft. Voor 40 W / 12 mm wordt per houtsoort de eigen 8 mm-curve gebruikt en de diktegroei gekalibreerd tussen officiële xTool 40 W-referenties voor 8 en 15 mm basswood plywood. 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als":"after that material correction, the 10 W, 20 W and 40 W start values are derived conservatively. For 10 W / 6 mm and 20 W / 6 mm sheet material, official xTool references are used as minimum energy anchors. 8 mm is extrapolated conservatively from those anchors and is only offered when it remains within the practical pass limit. For 40 W / 12 mm, each wood species uses its own 8 mm curve and thickness growth is calibrated between official xTool 40 W references for 8 and 15 mm basswood plywood. At 10 W, 10 mm and thicker is not shown as a quick start value. Impractical combinations deliberately receive no speed or dozens of passes, but are marked as",
+    "gemarkeerd. De afgeleide snijcurves worden daarna automatisch gecontroleerd: bij hoger vermogen mag het aantal passages niet opnieuw toenemen, de totale snijtijd mag bij een overgang naar minder passages niet verslechteren en binnen hetzelfde aantal passages mag de snelheid niet terugvallen. Een snijrij met een geldige snelheid én geldig aantal passes wordt als Startwaarde behandeld; alleen rijen zonder bruikbare snijparameters blijven Niet aanbevolen. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.":"marked. The derived cutting curves are then checked automatically: at higher power the number of passes may not increase again, total cutting time may not worsen when moving to fewer passes, and within the same number of passes the speed may not decrease. A cutting row with a valid speed and valid number of passes is treated as a Start value; only rows without usable cutting parameters remain Not recommended. Use all values as a starting point and perform a material test first.",
+    "Nog geen wijzigingen.":"No changes yet.",
+    "Nog geen favorieten.":"No favorites yet.",
+    "Door Bijdragers toegevoegd":"Added by Contributors",
+    "Eigen praktijkbevestiging":"Own practical confirmation",
+    "Nog te valideren op jouw machine":"Still to be validated on your machine",
+    "Zelf toegevoegd, nog niet getest":"Added manually, not yet tested",
+    "Onbetrouwbare snijcombinaties":"Unreliable cutting combinations",
+    "10/20/40/70 W samen":"10/20/40/70 W combined",
+    "Acacia-master + materiaalfactoren":"Acacia master + material factors",
+    "Door jou fysiek bevestigd":"Physically confirmed by you",
+    "Snel toegankelijk":"Quickly accessible"
+  },
+  fr:{
+    "Instellingen diodelasers · 10 W · 20 W · 40 W · 70 W":"Réglages laser diode · 10 W · 20 W · 40 W · 70 W",
+    "). Gebruik hier nooit een Secret Key.":"). N’utilisez jamais de Secret Key ici.",
+    ". Na verificatie van je e-mailadres krijg je automatisch de rol":". Après vérification de votre adresse e-mail, vous recevez automatiquement le rôle",
+    ": je mag waarden toevoegen, maar niet wijzigen of verwijderen.":" : vous pouvez ajouter des valeurs, mais pas les modifier ni les supprimer.",
+    "Beheerders kunnen materialen echt hernoemen of samenvoegen zonder duizenden ingebouwde rijen te kopiëren. De centrale database bewaart een canonieke hernoemingslaag; alle gekoppelde startwaarden en eigen instellingen verschijnen daardoor onder de nieuwe materiaalnaam. Categorieën en extra laserprofielen worden eveneens centraal beheerd.":"Les administrateurs peuvent réellement renommer ou fusionner des matériaux sans copier des milliers de lignes intégrées. La base de données centrale conserve une couche de renommage canonique ; toutes les valeurs de départ et tous les réglages personnalisés liés apparaissent ainsi sous le nouveau nom du matériau. Les catégories et les profils laser supplémentaires sont également gérés de manière centralisée.",
+    "Compact opgeslagen: 0.3 KB. Alleen wijzigingen en metadata.":"Stockage compact : 0,3 Ko. Uniquement les modifications et les métadonnées.",
+    "Kies een bestaande categorie of typ een nieuwe categorie. De gekozen categorie wordt automatisch vertaald en centraal opgeslagen.":"Choisissez une catégorie existante ou saisissez une nouvelle catégorie. La catégorie choisie est automatiquement traduite et enregistrée de manière centralisée.",
+    "Meertalige materiaalprofielen:":"Profils de matériaux multilingues :",
+    "Opmerking:":"Remarque :",
+    "in Instellingen werkt het zoekveld zoals het materiaalveld bij een nieuwe instelling: begin een materiaalnaam te typen en kies uit de voorstellen. Standaard blijft vrije tekst zoeken actief, zodat je ook woorden kunt zoeken die ergens in een materiaalnaam, bron of opmerking voorkomen. Vink":"dans Réglages, le champ de recherche fonctionne comme le champ matériau lors de la création d’un nouveau réglage : commencez à saisir le nom d’un matériau et choisissez parmi les suggestions. La recherche en texte libre reste active par défaut, afin que vous puissiez également rechercher des mots présents dans un nom de matériau, une source ou une remarque. Activez",
+    "aan wanneer je uitsluitend het gekozen materiaal wilt zien; zoeken op “Glas” toont dan bijvoorbeeld niet langer “Douglas”. De globale zoekbalk bovenaan blijft werken met Enter of het vergrootglas en ondersteunt NL, EN, FR en DE.":"si vous souhaitez afficher uniquement le matériau choisi ; une recherche sur « Verre », par exemple, n’affichera alors plus « Douglas ». La barre de recherche globale en haut continue de fonctionner avec Entrée ou la loupe et prend en charge NL, EN, FR et DE.",
+    "de interface ondersteunt Nederlands, English, Français en Deutsch. De taalkeuze wordt per browser onthouden. Ingebouwde materiaalnamen, statussen, veiligheidsmeldingen en standaardnotities worden vertaald voor weergave; vrije notities die gebruikers zelf invoeren blijven in de taal waarin ze zijn geschreven.":"l’interface prend en charge Nederlands, English, Français et Deutsch. Le choix de la langue est mémorisé par navigateur. Les noms de matériaux intégrés, les statuts, les messages de sécurité et les remarques standard sont traduits pour l’affichage ; les remarques libres saisies par les utilisateurs restent dans la langue dans laquelle elles ont été écrites.",
+    "de interne materiaalnaam volgt automatisch de Nederlandse materiaalnaam. Als die naam verandert, worden bij Opslaan ook alle gekoppelde centrale instellingen en het materiaalprofiel naar de nieuwe naam verhuisd. Bestaat de doelnaam al als een ander materiaal, gebruik dan bewust":"le nom interne du matériau suit automatiquement le nom néerlandais du matériau. Si ce nom change, l’enregistrement déplace également tous les réglages centraux liés et le profil du matériau vers le nouveau nom. Si le nom cible existe déjà comme autre matériau, utilisez volontairement",
+    "in Materiaalbeheer.":"dans Gestion des matériaux.",
+    "extra wattages zoals 5 W, 22 W, 30 W of 60 W kunnen worden toegevoegd. Hiervoor worden niet automatisch afgeleide startwaarden gegenereerd; je voegt eigen instellingen of materiaaltests toe.":"des puissances supplémentaires telles que 5 W, 22 W, 30 W ou 60 W peuvent être ajoutées. Aucune valeur de départ dérivée n’est générée automatiquement pour celles-ci ; vous ajoutez vos propres réglages ou tests de matériau.",
+    "kiest voor":"choisissez",
+    "kun je een bestaande categorie kiezen of zelf een nieuwe typen. Nieuwe categorieën worden automatisch naar NL, EN, FR en DE vertaald en verschijnen daarna ook als voorstel bij andere materialen.":"vous pouvez choisir une catégorie existante ou en saisir une nouvelle. Les nouvelles catégories sont automatiquement traduites en NL, EN, FR et DE, puis apparaissent également comme suggestions pour d’autres matériaux.",
+    "materiaalprofielen (categorie, RAL-kleur, transparantie, beschrijving, veiligheid en vertalingen) worden op de online versie centraal opgeslagen. Een wijziging op de computer verschijnt daardoor ook op de smartphone na synchronisatie/vernieuwen.":"les profils de matériaux (catégorie, couleur RAL, transparence, description, sécurité et traductions) sont enregistrés de manière centralisée dans la version en ligne. Une modification effectuée sur l’ordinateur apparaît donc également sur le smartphone après synchronisation/actualisation.",
+    "na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm en 20 W / 6 mm plaatmateriaal worden officiële xTool-referenties als minimale energie-ankers gebruikt. 8 mm wordt conservatief vanuit die ankers geëxtrapoleerd en alleen aangeboden wanneer dit binnen de praktische passlimiet blijft. Voor 40 W / 12 mm wordt per houtsoort de eigen 8 mm-curve gebruikt en de diktegroei gekalibreerd tussen officiële xTool 40 W-referenties voor 8 en 15 mm basswood plywood. 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als":"après cette correction du matériau, les valeurs de départ 10 W, 20 W et 40 W sont dérivées de manière prudente. Pour les matériaux en plaque de 10 W / 6 mm et 20 W / 6 mm, des références officielles xTool sont utilisées comme ancrages énergétiques minimaux. Le 8 mm est extrapolé prudemment à partir de ces ancrages et n’est proposé que s’il reste dans la limite pratique du nombre de passages. Pour 40 W / 12 mm, chaque essence de bois utilise sa propre courbe 8 mm et l’augmentation d’épaisseur est calibrée entre les références officielles xTool 40 W pour le contreplaqué de tilleul de 8 et 15 mm. À 10 W, les épaisseurs de 10 mm et plus ne sont pas affichées comme valeur de départ rapide. Les combinaisons peu pratiques ne reçoivent volontairement ni vitesse ni des dizaines de passages, mais sont indiquées comme",
+    "gemarkeerd. De afgeleide snijcurves worden daarna automatisch gecontroleerd: bij hoger vermogen mag het aantal passages niet opnieuw toenemen, de totale snijtijd mag bij een overgang naar minder passages niet verslechteren en binnen hetzelfde aantal passages mag de snelheid niet terugvallen. Een snijrij met een geldige snelheid én geldig aantal passes wordt als Startwaarde behandeld; alleen rijen zonder bruikbare snijparameters blijven Niet aanbevolen. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.":"indiquées. Les courbes de coupe dérivées sont ensuite contrôlées automatiquement : à puissance plus élevée, le nombre de passages ne peut pas augmenter à nouveau, le temps de coupe total ne peut pas se dégrader lors du passage à moins de passages et, pour un même nombre de passages, la vitesse ne peut pas diminuer. Une ligne de coupe avec une vitesse valide et un nombre de passages valide est traitée comme Valeur de départ ; seules les lignes sans paramètres de coupe utilisables restent Non recommandées. Utilisez toutes les valeurs comme point de départ et effectuez d’abord un test de matériau.",
+    "Nog geen wijzigingen.":"Aucune modification pour le moment.",
+    "Nog geen favorieten.":"Aucun favori pour le moment.",
+    "Door Bijdragers toegevoegd":"Ajouté par des Contributeurs",
+    "Eigen praktijkbevestiging":"Confirmation pratique personnelle",
+    "Nog te valideren op jouw machine":"Encore à valider sur votre machine",
+    "Zelf toegevoegd, nog niet getest":"Ajouté manuellement, pas encore testé",
+    "Onbetrouwbare snijcombinaties":"Combinaisons de coupe peu fiables",
+    "10/20/40/70 W samen":"10/20/40/70 W combinés",
+    "Acacia-master + materiaalfactoren":"Référence Acacia + facteurs de matériau",
+    "Door jou fysiek bevestigd":"Confirmé physiquement par vous",
+    "Snel toegankelijk":"Accès rapide"
+  },
+  de:{
+    "Instellingen diodelasers · 10 W · 20 W · 40 W · 70 W":"Diodenlaser-Einstellungen · 10 W · 20 W · 40 W · 70 W",
+    "). Gebruik hier nooit een Secret Key.":"). Verwenden Sie hier niemals einen Secret Key.",
+    ". Na verificatie van je e-mailadres krijg je automatisch de rol":". Nach der Bestätigung Ihrer E-Mail-Adresse erhalten Sie automatisch die Rolle",
+    ": je mag waarden toevoegen, maar niet wijzigen of verwijderen.":": Sie können Werte hinzufügen, aber nicht ändern oder löschen.",
+    "Beheerders kunnen materialen echt hernoemen of samenvoegen zonder duizenden ingebouwde rijen te kopiëren. De centrale database bewaart een canonieke hernoemingslaag; alle gekoppelde startwaarden en eigen instellingen verschijnen daardoor onder de nieuwe materiaalnaam. Categorieën en extra laserprofielen worden eveneens centraal beheerd.":"Administratoren können Materialien tatsächlich umbenennen oder zusammenführen, ohne Tausende integrierte Zeilen zu kopieren. Die zentrale Datenbank verwaltet eine kanonische Umbenennungsebene; dadurch erscheinen alle verknüpften Startwerte und eigenen Einstellungen unter dem neuen Materialnamen. Kategorien und zusätzliche Laserprofile werden ebenfalls zentral verwaltet.",
+    "Compact opgeslagen: 0.3 KB. Alleen wijzigingen en metadata.":"Kompakt gespeichert: 0,3 KB. Nur Änderungen und Metadaten.",
+    "Kies een bestaande categorie of typ een nieuwe categorie. De gekozen categorie wordt automatisch vertaald en centraal opgeslagen.":"Wählen Sie eine bestehende Kategorie oder geben Sie eine neue Kategorie ein. Die gewählte Kategorie wird automatisch übersetzt und zentral gespeichert.",
+    "Meertalige materiaalprofielen:":"Mehrsprachige Materialprofile:",
+    "Opmerking:":"Hinweis:",
+    "in Instellingen werkt het zoekveld zoals het materiaalveld bij een nieuwe instelling: begin een materiaalnaam te typen en kies uit de voorstellen. Standaard blijft vrije tekst zoeken actief, zodat je ook woorden kunt zoeken die ergens in een materiaalnaam, bron of opmerking voorkomen. Vink":"in Einstellungen funktioniert das Suchfeld wie das Materialfeld beim Erstellen einer neuen Einstellung: Beginnen Sie mit der Eingabe eines Materialnamens und wählen Sie aus den Vorschlägen. Die Freitextsuche bleibt standardmäßig aktiv, sodass Sie auch nach Wörtern suchen können, die irgendwo in einem Materialnamen, einer Quelle oder einem Hinweis vorkommen. Aktivieren Sie",
+    "aan wanneer je uitsluitend het gekozen materiaal wilt zien; zoeken op “Glas” toont dan bijvoorbeeld niet langer “Douglas”. De globale zoekbalk bovenaan blijft werken met Enter of het vergrootglas en ondersteunt NL, EN, FR en DE.":"wenn Sie ausschließlich das ausgewählte Material sehen möchten; eine Suche nach „Glas“ zeigt dann beispielsweise „Douglas“ nicht mehr an. Die globale Suchleiste oben funktioniert weiterhin mit Enter oder der Lupe und unterstützt NL, EN, FR und DE.",
+    "de interface ondersteunt Nederlands, English, Français en Deutsch. De taalkeuze wordt per browser onthouden. Ingebouwde materiaalnamen, statussen, veiligheidsmeldingen en standaardnotities worden vertaald voor weergave; vrije notities die gebruikers zelf invoeren blijven in de taal waarin ze zijn geschreven.":"die Oberfläche unterstützt Nederlands, English, Français und Deutsch. Die Sprachauswahl wird pro Browser gespeichert. Integrierte Materialnamen, Statusangaben, Sicherheitshinweise und Standardnotizen werden für die Anzeige übersetzt; frei eingegebene Notizen der Benutzer bleiben in der Sprache, in der sie geschrieben wurden.",
+    "de interne materiaalnaam volgt automatisch de Nederlandse materiaalnaam. Als die naam verandert, worden bij Opslaan ook alle gekoppelde centrale instellingen en het materiaalprofiel naar de nieuwe naam verhuisd. Bestaat de doelnaam al als een ander materiaal, gebruik dan bewust":"der interne Materialname folgt automatisch dem niederländischen Materialnamen. Wenn sich dieser Name ändert, werden beim Speichern auch alle verknüpften zentralen Einstellungen und das Materialprofil auf den neuen Namen verschoben. Wenn der Zielname bereits als anderes Material existiert, verwenden Sie bewusst",
+    "in Materiaalbeheer.":"in der Materialverwaltung.",
+    "extra wattages zoals 5 W, 22 W, 30 W of 60 W kunnen worden toegevoegd. Hiervoor worden niet automatisch afgeleide startwaarden gegenereerd; je voegt eigen instellingen of materiaaltests toe.":"zusätzliche Leistungsstufen wie 5 W, 22 W, 30 W oder 60 W können hinzugefügt werden. Dafür werden nicht automatisch abgeleitete Startwerte erzeugt; Sie fügen eigene Einstellungen oder Materialtests hinzu.",
+    "kiest voor":"wählen",
+    "kun je een bestaande categorie kiezen of zelf een nieuwe typen. Nieuwe categorieën worden automatisch naar NL, EN, FR en DE vertaald en verschijnen daarna ook als voorstel bij andere materialen.":"können Sie eine bestehende Kategorie auswählen oder selbst eine neue eingeben. Neue Kategorien werden automatisch in NL, EN, FR und DE übersetzt und erscheinen anschließend auch als Vorschlag bei anderen Materialien.",
+    "materiaalprofielen (categorie, RAL-kleur, transparantie, beschrijving, veiligheid en vertalingen) worden op de online versie centraal opgeslagen. Een wijziging op de computer verschijnt daardoor ook op de smartphone na synchronisatie/vernieuwen.":"Materialprofile (Kategorie, RAL-Farbe, Transparenz, Beschreibung, Sicherheit und Übersetzungen) werden in der Online-Version zentral gespeichert. Eine Änderung am Computer erscheint dadurch nach Synchronisierung/Aktualisierung auch auf dem Smartphone.",
+    "na die materiaalcorrectie worden de 10 W-, 20 W- en 40 W-startwaarden conservatief afgeleid. Voor 10 W / 6 mm en 20 W / 6 mm plaatmateriaal worden officiële xTool-referenties als minimale energie-ankers gebruikt. 8 mm wordt conservatief vanuit die ankers geëxtrapoleerd en alleen aangeboden wanneer dit binnen de praktische passlimiet blijft. Voor 40 W / 12 mm wordt per houtsoort de eigen 8 mm-curve gebruikt en de diktegroei gekalibreerd tussen officiële xTool 40 W-referenties voor 8 en 15 mm basswood plywood. 10 mm en dikker wordt op 10 W niet als snelle startwaarde getoond. Onpraktische combinaties krijgen bewust géén snelheid of tientallen passages, maar worden als":"nach dieser Materialkorrektur werden die 10-W-, 20-W- und 40-W-Startwerte konservativ abgeleitet. Für 10 W / 6 mm und 20 W / 6 mm Plattenmaterial werden offizielle xTool-Referenzen als minimale Energieanker verwendet. 8 mm wird konservativ aus diesen Ankern extrapoliert und nur angeboten, wenn dies innerhalb der praktischen Pass-Grenze bleibt. Für 40 W / 12 mm wird je Holzart die eigene 8-mm-Kurve verwendet und das Dickenwachstum zwischen offiziellen xTool-40-W-Referenzen für 8 und 15 mm Basswood-Sperrholz kalibriert. Bei 10 W werden 10 mm und dicker nicht als schneller Startwert angezeigt. Unpraktische Kombinationen erhalten bewusst keine Geschwindigkeit oder Dutzende Durchgänge, sondern werden als",
+    "gemarkeerd. De afgeleide snijcurves worden daarna automatisch gecontroleerd: bij hoger vermogen mag het aantal passages niet opnieuw toenemen, de totale snijtijd mag bij een overgang naar minder passages niet verslechteren en binnen hetzelfde aantal passages mag de snelheid niet terugvallen. Een snijrij met een geldige snelheid én geldig aantal passes wordt als Startwaarde behandeld; alleen rijen zonder bruikbare snijparameters blijven Niet aanbevolen. Gebruik alle waarden als startpunt en voer eerst een materiaaltest uit.":"markiert. Die abgeleiteten Schnittkurven werden anschließend automatisch geprüft: Bei höherer Leistung darf die Anzahl der Durchgänge nicht wieder steigen, die gesamte Schnittzeit darf sich beim Wechsel zu weniger Durchgängen nicht verschlechtern und bei gleicher Anzahl von Durchgängen darf die Geschwindigkeit nicht sinken. Eine Schnittzeile mit gültiger Geschwindigkeit und gültiger Anzahl von Durchgängen wird als Startwert behandelt; nur Zeilen ohne brauchbare Schnittparameter bleiben Nicht empfohlen. Verwenden Sie alle Werte als Ausgangspunkt und führen Sie zuerst einen Materialtest durch.",
+    "Nog geen wijzigingen.":"Noch keine Änderungen.",
+    "Nog geen favorieten.":"Noch keine Favoriten.",
+    "Door Bijdragers toegevoegd":"Von Mitwirkenden hinzugefügt",
+    "Eigen praktijkbevestiging":"Eigene praktische Bestätigung",
+    "Nog te valideren op jouw machine":"Noch auf Ihrem Gerät zu validieren",
+    "Zelf toegevoegd, nog niet getest":"Manuell hinzugefügt, noch nicht getestet",
+    "Onbetrouwbare snijcombinaties":"Unzuverlässige Schnittkombinationen",
+    "10/20/40/70 W samen":"10/20/40/70 W kombiniert",
+    "Acacia-master + materiaalfactoren":"Acacia-Master + Materialfaktoren",
+    "Door jou fysiek bevestigd":"Von Ihnen physisch bestätigt",
+    "Snel toegankelijk":"Schnell zugänglich"
+  }
+};
+for(const lang of ['en','fr','de'])Object.assign(I18N_TRANSLATIONS[lang],I18N_REMAINING_UI_AUDIT[lang]);
+
+
 
 
 
@@ -885,6 +989,7 @@ function tr(value,lang=currentLanguage){
   if(lang==='en'){
     s=s.replace(/^Pagina (\d+) van (\d+) · (.+)$/,'Page $1 of $2 · $3')
        .replace(/^(\d+) van (\d+) instellingen$/,'$1 of $2 settings')
+       .replace(/^([\d.,]+) ingebouwde startwaarden$/,'$1 built-in start values')
        .replace(/^(\d+) van (\d+) acties$/,'$1 of $2 actions')
        .replace(/^(\d+) gebruikers$/,'$1 users')
        .replace(/^(\d+) wachtend$/,'$1 pending')
@@ -895,6 +1000,7 @@ function tr(value,lang=currentLanguage){
   } else if(lang==='fr'){
     s=s.replace(/^Pagina (\d+) van (\d+) · (.+)$/,'Page $1 sur $2 · $3')
        .replace(/^(\d+) van (\d+) instellingen$/,'$1 sur $2 réglages')
+       .replace(/^([\d.,]+) ingebouwde startwaarden$/,'$1 valeurs de départ intégrées')
        .replace(/^(\d+) van (\d+) acties$/,'$1 sur $2 actions')
        .replace(/^(\d+) gebruikers$/,'$1 utilisateurs')
        .replace(/^(\d+) wachtend$/,'$1 en attente')
@@ -905,6 +1011,7 @@ function tr(value,lang=currentLanguage){
   } else if(lang==='de'){
     s=s.replace(/^Pagina (\d+) van (\d+) · (.+)$/,'Seite $1 von $2 · $3')
        .replace(/^(\d+) van (\d+) instellingen$/,'$1 von $2 Einstellungen')
+       .replace(/^([\d.,]+) ingebouwde startwaarden$/,'$1 integrierte Startwerte')
        .replace(/^(\d+) van (\d+) acties$/,'$1 von $2 Aktionen')
        .replace(/^(\d+) gebruikers$/,'$1 Benutzer')
        .replace(/^(\d+) wachtend$/,'$1 wartend')
@@ -1028,6 +1135,8 @@ function refreshSearchLanguageValues(){
 function setLanguage(lang,{persist=true}={}){
   if(!I18N_LANGS.includes(lang))lang='nl';
   currentLanguage=lang;
+  document.documentElement.lang=currentLanguage;
+  document.title=tr('Instellingen diodelasers · 10 W · 20 W · 40 W · 70 W');
   if(persist)localStorage.setItem(I18N_STORAGE_KEY,lang);
   refreshSearchLanguageValues();
   translateDom(document.body);
@@ -1047,6 +1156,7 @@ function setLanguage(lang,{persist=true}={}){
 function initI18n(){
   currentLanguage=detectLanguage();
   document.documentElement.lang=currentLanguage;
+  document.title=tr('Instellingen diodelasers · 10 W · 20 W · 40 W · 70 W');
   document.querySelectorAll('.langSelect').forEach(sel=>{
     sel.value=currentLanguage;
     sel.addEventListener('change',()=>setLanguage(sel.value));
@@ -3365,9 +3475,74 @@ function renderFavorites(){
         ${can('admin')?` <button class="btn danger sm" onclick="deleteRow('${r.id}')">${esc(tr('Verwijder'))}</button>`:''}
       </td>
     </tr>`).join('')
-    :'<tr><td colspan="9" class="empty">Nog geen favorieten. Klik op ★ bij een instelling.</td></tr>';
+    :`<tr><td colspan="9" class="empty">${esc(tr('Nog geen favorieten. Klik op ★ bij een instelling.'))}</td></tr>`;
 }
-function renderDashboard(){if(!Array.isArray(state.favorites))state.favorites=[];const materials=unique('materiaal').length,tested=rows.filter(r=>r.tested&&r.approvalStatus!=='pending').length,notRec=rows.filter(r=>statusOf(r)==='Niet aanbevolen').length,favs=state.favorites.length;$('metrics').innerHTML=[['Instellingen',rows.length.toLocaleString(currentLocale()),'10/20/40/70 W samen'],['Materialen',materials.toLocaleString(currentLocale()),'Acacia-master + materiaalfactoren'],['Getest',tested.toLocaleString(currentLocale()),'Door jou fysiek bevestigd'],['Favorieten',favs.toLocaleString(currentLocale()),'Snel toegankelijk']].map((x,i)=>`<div class="metric"><div class="metricTop"><span>${x[0]}</span></div><div class="metricValue">${x[1]}</div><div class="metricHint">${x[2]}</div></div>`).join('');const hist=(centralMode?centralRecentHistory:(state.history||[])).slice(0,5);$('recentHistory').innerHTML=hist.length?hist.map(h=>`<div class="recentItem"><div class="miniIcon">↺</div><div class="recentMain"><strong data-i18n-skip="true">${esc(localizedHistoryLabel(h))}</strong><span>${esc(h.user)} · ${fmtDate(h.at)}</span></div></div>`).join(''):'<div class="empty" style="padding:20px">Nog geen wijzigingen.</div>';const favRows=state.favorites.map(id=>rows.find(r=>r.id===id)).filter(Boolean).slice(0,5);$('dashboardFavorites').innerHTML=favRows.length?favRows.map(r=>`<div class="recentItem" onclick="openDetails('${r.id}')" style="cursor:pointer"><div class="miniIcon">★</div><div class="recentMain"><strong data-i18n-skip="true">${esc(localizedRowLabel(r))}</strong><span>${statusOf(r)} · ${r.snelheid||'—'} mm/min</span></div></div>`).join(''):'<div class="empty" style="padding:20px">Nog geen favorieten.</div>';const start=rows.filter(r=>statusOf(r)==='Startwaarde').length,own=rows.filter(r=>statusOf(r)==='Eigen instelling').length;$('qualitySummary').innerHTML=`<div class="settingRow"><div><strong>Wacht op goedkeuring</strong><span>Door Bijdragers toegevoegd</span></div><span class="pill amber">${centralMode?centralPendingCount:rows.filter(r=>r.approvalStatus==='pending').length}</span></div><div class="settingRow"><div><strong>Getest</strong><span>Eigen praktijkbevestiging</span></div><span class="pill green">${tested.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Startwaarde</strong><span>Nog te valideren op jouw machine</span></div><span class="pill amber">${start.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Eigen instellingen</strong><span>Zelf toegevoegd, nog niet getest</span></div><span class="pill purple">${own.toLocaleString(currentLocale())}</span></div><div class="settingRow"><div><strong>Niet aanbevolen</strong><span>Onbetrouwbare snijcombinaties</span></div><span class="pill red">${notRec.toLocaleString(currentLocale())}</span></div>`}
+function renderDashboard(){
+  if(!Array.isArray(state.favorites))state.favorites=[];
+
+  const materials=unique('materiaal').length;
+  const tested=rows.filter(r=>r.tested&&r.approvalStatus!=='pending').length;
+  const notRec=rows.filter(r=>statusOf(r)==='Niet aanbevolen').length;
+  const favs=state.favorites.length;
+
+  $('metrics').innerHTML=[
+    ['Instellingen',rows.length.toLocaleString(currentLocale()),'10/20/40/70 W samen'],
+    ['Materialen',materials.toLocaleString(currentLocale()),'Acacia-master + materiaalfactoren'],
+    ['Getest',tested.toLocaleString(currentLocale()),'Door jou fysiek bevestigd'],
+    ['Favorieten',favs.toLocaleString(currentLocale()),'Snel toegankelijk']
+  ].map(x=>`<div class="metric">
+    <div class="metricTop"><span>${esc(tr(x[0]))}</span></div>
+    <div class="metricValue">${x[1]}</div>
+    <div class="metricHint">${esc(tr(x[2]))}</div>
+  </div>`).join('');
+
+  const hist=(centralMode?centralRecentHistory:(state.history||[])).slice(0,5);
+  $('recentHistory').innerHTML=hist.length
+    ?hist.map(h=>`<div class="recentItem">
+      <div class="miniIcon">↺</div>
+      <div class="recentMain">
+        <strong data-i18n-skip="true">${esc(localizedHistoryLabel(h))}</strong>
+        <span>${esc(h.user)} · ${fmtDate(h.at)}</span>
+      </div>
+    </div>`).join('')
+    :`<div class="empty" style="padding:20px">${esc(tr('Nog geen wijzigingen.'))}</div>`;
+
+  const favRows=state.favorites.map(id=>rows.find(r=>r.id===id)).filter(Boolean).slice(0,5);
+  $('dashboardFavorites').innerHTML=favRows.length
+    ?favRows.map(r=>`<div class="recentItem" onclick="openDetails('${r.id}')" style="cursor:pointer">
+      <div class="miniIcon">★</div>
+      <div class="recentMain">
+        <strong data-i18n-skip="true">${esc(localizedRowLabel(r))}</strong>
+        <span>${esc(tr(statusOf(r)))} · ${r.snelheid||'—'} mm/min</span>
+      </div>
+    </div>`).join('')
+    :`<div class="empty" style="padding:20px">${esc(tr('Nog geen favorieten.'))}</div>`;
+
+  const startCount=rows.filter(r=>statusOf(r)==='Startwaarde').length;
+  const own=rows.filter(r=>statusOf(r)==='Eigen instelling').length;
+
+  $('qualitySummary').innerHTML=`
+    <div class="settingRow">
+      <div><strong>${esc(tr('Wacht op goedkeuring'))}</strong><span>${esc(tr('Door Bijdragers toegevoegd'))}</span></div>
+      <span class="pill amber">${centralMode?centralPendingCount:rows.filter(r=>r.approvalStatus==='pending').length}</span>
+    </div>
+    <div class="settingRow">
+      <div><strong>${esc(tr('Getest'))}</strong><span>${esc(tr('Eigen praktijkbevestiging'))}</span></div>
+      <span class="pill green">${tested.toLocaleString(currentLocale())}</span>
+    </div>
+    <div class="settingRow">
+      <div><strong>${esc(tr('Startwaarde'))}</strong><span>${esc(tr('Nog te valideren op jouw machine'))}</span></div>
+      <span class="pill amber">${startCount.toLocaleString(currentLocale())}</span>
+    </div>
+    <div class="settingRow">
+      <div><strong>${esc(tr('Eigen instellingen'))}</strong><span>${esc(tr('Zelf toegevoegd, nog niet getest'))}</span></div>
+      <span class="pill purple">${own.toLocaleString(currentLocale())}</span>
+    </div>
+    <div class="settingRow">
+      <div><strong>${esc(tr('Niet aanbevolen'))}</strong><span>${esc(tr('Onbetrouwbare snijcombinaties'))}</span></div>
+      <span class="pill red">${notRec.toLocaleString(currentLocale())}</span>
+    </div>`;
+}
 
 function renderMaterials(){const q=$('materialSearch').value.trim();const nq=normalizeSearchText(q);const mats=unique('materiaal').filter(m=>I18N_LANGS.some(lang=>normalizeSearchText(translatedMaterialName(m,lang)).includes(nq))||normalizeSearchText(m).includes(nq));$('materialGrid').innerHTML=mats.map(m=>{const st=materialStats(m),safe=safetyForMaterial(m),desc=materialDescription(m),name=translatedMaterialName(m);return `<article class="materialCard" onclick="openMaterial(decodeURIComponent('${encodeURIComponent(m)}'))">${materialVisualHtml(m,92)}<div class="materialBody"><h3>${esc(name)}</h3><div class="materialMeta"><span class="pill blue">${esc(tr(`${st.total} waarden`))}</span>${st.tested?`<span class="pill green">${esc(tr(`${st.tested} getest`))}</span>`:''}</div><div class="materialDesc">${esc(desc)}</div><div class="materialFoot"><span>${esc(tr(`${st.cut} snij · ${st.engrave} graveer`))}</span><span>${esc(tr(safe.level==='ok'?'Normaal':safe.level==='warn'?'Let op':'Risico'))}</span></div></div></article>`}).join('')||`<div class="empty">${esc(tr('Geen materialen gevonden.'))}</div>`}
 function openMaterial(m){activeMaterialName=m;const st=materialStats(m),safe=safetyForMaterial(m),desc=materialDescription(m),name=translatedMaterialName(m);const cut=rows.filter(r=>r.materiaal===m&&r.bewerking==='Snijden'&&Number(r.vermogen)===100&&r.snelheid&&r.approvalStatus!=='pending').sort((a,b)=>(Number(a.laserWatt)||70)-(Number(b.laserWatt)||70)||Number(a.dikte)-Number(b.dikte));const engr=LASER_PROFILES.map(w=>rows.filter(r=>r.materiaal===m&&r.bewerking==='Graveren'&&Number(r.laserWatt)===w&&r.snelheid&&r.approvalStatus!=='pending').sort((a,b)=>Math.abs(Number(a.vermogen)-35)-Math.abs(Number(b.vermogen)-35))[0]).filter(Boolean);$('materialDetail').innerHTML=`<div class="detailGrid"><div>${materialVisualHtml(m,150)}<h2 style="margin:14px 0 4px">${esc(name)}</h2><div class="materialDesc" style="margin-top:0">${esc(desc)}</div><div class="safety ${safe.level}" style="margin-top:12px"><strong>${esc(tr('Materiaalveiligheid:'))}</strong> ${esc(safe.text)}</div>${can('edit')?`<div style="margin-top:12px"><button class="btn secondary sm" onclick="openMaterialEditor(decodeURIComponent('${encodeURIComponent(m)}'))">${esc(tr('Materiaal aanpassen'))}</button></div>`:''}<h3>${esc(tr('Snijden op 100% – beschikbare startpunten'))}</h3><div style="display:flex;gap:7px;flex-wrap:wrap">${cut.map(r=>`<button class="btn secondary sm" onclick="closeModal('materialBackdrop');openDetails('${r.id}')">${r.laserWatt} W · ${r.dikte} mm · ${r.snelheid} mm/min · ${r.passes}×</button>`).join('')||esc(tr('Geen snijwaarden'))}</div></div><div class="detailSide"><h4>${esc(tr('Profiel'))}</h4><div class="metaLine"><span>${esc(tr('Categorie'))}</span><strong>${esc(materialCategory(m))}</strong></div><div class="metaLine"><span>${esc(tr('Instellingen'))}</span><strong>${st.total}</strong></div><div class="metaLine"><span>${esc(tr('Laserprofielen'))}</span><strong>${LASER_PROFILES.join(' / ')} W</strong></div>${materialPropertyHtml(m)}<div class="metaLine"><span>${esc(tr('Getest'))}</span><strong>${st.tested}</strong></div><div class="metaLine"><span>${esc(tr('Snijden'))}</span><strong>${st.cut}</strong></div><div class="metaLine"><span>${esc(tr('Graveren'))}</span><strong>${st.engrave}</strong></div>${engr.length?`<h4 style="margin-top:16px">${esc(tr('Graveerreferenties'))}</h4>${engr.map(r=>`<div class="metaLine"><span>${r.laserWatt} W</span><strong>${r.vermogen}% · ${r.snelheid} mm/min</strong></div>`).join('')}`:''}</div></div>`;openModal('materialBackdrop')}
