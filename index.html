@@ -273,17 +273,17 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
   min-width:0;
   padding-bottom:8px;
 }
-.exactMaterialToggle{
-  display:inline-flex;
+.field label.exactMaterialToggle{
+  display:flex;
   align-items:center;
   justify-content:flex-start;
   flex-wrap:nowrap;
   gap:8px;
-  width:auto;
+  width:max-content;
   max-width:100%;
   min-height:22px;
-  margin-top:10px;
-  padding:2px 2px 2px 0;
+  margin:10px 0 0;
+  padding:2px 0 6px;
   font-size:11px;
   font-weight:750;
   line-height:1;
@@ -291,8 +291,10 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
   cursor:pointer;
   user-select:none;
   white-space:nowrap;
+  text-transform:uppercase;
+  letter-spacing:.04em;
 }
-.exactMaterialToggle input{
+.field label.exactMaterialToggle input{
   flex:0 0 16px;
   width:16px;
   height:16px;
@@ -304,8 +306,9 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
   accent-color:#2268d8;
   cursor:pointer;
 }
-.exactMaterialToggle span{
+.field label.exactMaterialToggle span{
   display:inline-block;
+  margin:0;
   line-height:16px;
   white-space:nowrap;
   vertical-align:middle;
@@ -435,7 +438,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.9-dev';
+const APP_VERSION='2.3.10-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
