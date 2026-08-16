@@ -269,26 +269,38 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 }
 
 
-.searchFieldWrap{min-width:0}
+.searchFieldWrap{min-width:0;padding-bottom:5px}
 .exactMaterialToggle{
-  display:inline-flex;
+  display:flex;
   align-items:center;
-  gap:7px;
-  margin-top:7px;
+  gap:9px;
+  width:max-content;
+  max-width:100%;
+  min-height:20px;
+  margin-top:10px;
+  padding:1px 3px;
   font-size:11px;
   font-weight:750;
+  line-height:16px;
   color:var(--muted);
   cursor:pointer;
   user-select:none;
 }
 .exactMaterialToggle input{
-  width:15px;
-  height:15px;
+  flex:0 0 16px;
+  width:16px;
+  height:16px;
   margin:0;
+  padding:0;
+  vertical-align:middle;
   accent-color:#2268d8;
   cursor:pointer;
 }
-.exactMaterialToggle span{line-height:1.2}
+.exactMaterialToggle span{
+  display:block;
+  line-height:16px;
+  white-space:nowrap;
+}
 
 
 /* v2.3.0 materiaalbeheer */
@@ -414,7 +426,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.7-dev';
+const APP_VERSION='2.3.8-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
