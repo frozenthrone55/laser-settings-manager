@@ -318,6 +318,34 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 /* v2.3.0 materiaalbeheer */
 .manageGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.manageTableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px}.manageTable{width:100%;border-collapse:collapse;min-width:700px}.manageTable th,.manageTable td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px;text-align:left}.manageTable th{background:#f7f9fc;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.manageTable tr:last-child td{border-bottom:0}.manageActions{display:flex;gap:6px;flex-wrap:wrap}.profileChips{display:flex;gap:8px;flex-wrap:wrap}.profileChip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:7px 10px;background:#fff;font-size:12px;font-weight:800}.profileChip .btn{padding:4px 7px}.manageToolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.manageToolbar .field{min-width:180px;flex:1}.propertyGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.linkText{word-break:break-all}.materialProps{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
 @media(max-width:900px){.manageGrid,.propertyGrid{grid-template-columns:1fr}.manageTable{min-width:620px}}
+
+/* v2.3.11 — vaste desktopnavigatie */
+@media(min-width:851px){
+  .app{
+    display:block;
+    min-height:100vh;
+    padding-left:250px;
+  }
+  .sidebar{
+    position:fixed;
+    top:0;
+    left:0;
+    bottom:0;
+    width:250px;
+    height:100vh;
+    overflow:hidden;
+  }
+  .shell{
+    width:100%;
+    min-width:0;
+  }
+}
+@media(max-width:850px){
+  .app{
+    display:block;
+    padding-left:0;
+  }
+}
 </style>
 </head>
 <body>
@@ -438,7 +466,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.10-dev';
+const APP_VERSION='2.3.11-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
