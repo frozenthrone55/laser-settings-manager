@@ -466,7 +466,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='2.3.18-dev';
+const APP_VERSION='2.3.19-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -1499,9 +1499,12 @@ function defaultState(){return {patch:{upserts:[],deleted:[]},favorites:[],histo
 function mergePortable(){const d=defaultState();return {...d,...PORTABLE_STATE,patch:PORTABLE_STATE.patch||d.patch,settings:{...d.settings,...(PORTABLE_STATE.settings||{})},users:Array.isArray(PORTABLE_STATE.users)&&PORTABLE_STATE.users.length?PORTABLE_STATE.users:d.users,materialProfiles:{...(d.materialProfiles||{}),...(PORTABLE_STATE.materialProfiles||{})},customCategories:{...(d.customCategories||{}),...(PORTABLE_STATE.customCategories||{})},materialRenames:{...(d.materialRenames||{}),...(PORTABLE_STATE.materialRenames||{})},laserProfiles:Array.isArray(PORTABLE_STATE.laserProfiles)&&PORTABLE_STATE.laserProfiles.length?PORTABLE_STATE.laserProfiles:d.laserProfiles};}
 function loadState(){try{const s=JSON.parse(localStorage.getItem(STATE_KEY));if(s&&typeof s==='object')return {...mergePortable(),...s,settings:{...mergePortable().settings,...(s.settings||{})}}}catch(e){}return mergePortable();}
 let state=loadState();LASER_PROFILES=[...new Set([...BASE_LASER_PROFILES,...((state.laserProfiles||[]).map(Number).filter(v=>Number.isFinite(v)&&v>0))])].sort((a,b)=>a-b);let rows=[];let currentUser={id:'usr-admin',username:'Admin',role:'admin'};let currentPage=1;let editingId=null;let selectedTest=null;let confirmAction=null;let editingUserId=null;
+const SEARCH_MATERIAL_CACHE=new Map();
+const SEARCH_ROW_CACHE=new Map();
+let filterSearchTimer=0;
 function materialRenameMap(){return centralMode?centralMaterialRenames:(state.materialRenames||{})}
 function resolveMaterialCanonical(value,map=materialRenameMap()){let cur=txt(value),seen=new Set();for(let i=0;i<30&&map&&map[cur]&&!seen.has(cur);i++){seen.add(cur);cur=txt(map[cur])}return cur}
-function rebuildRows(){const patch=centralMode?centralPatch:(state.patch||{upserts:[],deleted:[]});const deleted=new Set(patch.deleted||[]);const ups=new Map((patch.upserts||[]).map(r=>[r.id,normalizeRow(r)]));rows=BASE.filter(r=>!deleted.has(r.id)).map(r=>ups.get(r.id)||clone(r));for(const [id,r] of ups)if(!BASE_MAP.has(id)&&!deleted.has(id))rows.push(r);const renames=materialRenameMap();rows=rows.map(r=>{const material=resolveMaterialCanonical(r.materiaal,renames);return material===r.materiaal?r:{...r,materiaal:material}});rows.sort(sortRows);}
+function rebuildRows(){clearSearchCaches();const patch=centralMode?centralPatch:(state.patch||{upserts:[],deleted:[]});const deleted=new Set(patch.deleted||[]);const ups=new Map((patch.upserts||[]).map(r=>[r.id,normalizeRow(r)]));rows=BASE.filter(r=>!deleted.has(r.id)).map(r=>ups.get(r.id)||clone(r));for(const [id,r] of ups)if(!BASE_MAP.has(id)&&!deleted.has(id))rows.push(r);const renames=materialRenameMap();rows=rows.map(r=>{const material=resolveMaterialCanonical(r.materiaal,renames);return material===r.materiaal?r:{...r,materiaal:material}});rows.sort(sortRows);}
 function backfillAuditMetadata(){let changed=false;const hist=state.history||[];for(const r of rows){if(r.createdByName||BASE_MAP.has(r.id))continue;const h=hist.find(x=>x.type==='add'&&x.after?.id===r.id);if(h){r.createdByName=txt(h.user)||'Onbekend';r.createdAt=h.at||'';changed=true}}if(changed){writePatch();try{localStorage.setItem(STATE_KEY,JSON.stringify(state))}catch(e){}}}
 function sameRow(a,b){return ROW_KEYS.every(k=>JSON.stringify(a[k]??'')===JSON.stringify(b[k]??''));}
 function writePatch(){if(centralMode)return;const ups=[];const current=new Map(rows.map(r=>[r.id,r]));const deleted=[];for(const base of BASE){if(!current.has(base.id)){deleted.push(base.id);continue;}const cur=current.get(base.id);if(!sameRow(cur,base))ups.push(cur);}for(const r of rows)if(!BASE_MAP.has(r.id))ups.push(r);state.patch={upserts:ups,deleted};}
@@ -2630,23 +2633,32 @@ function exactMaterialForQuery(q){
 }
 
 
-function materialSearchAliases(material){
-  const values=[material];
+function clearSearchCaches(){
+  SEARCH_MATERIAL_CACHE.clear();
+  SEARCH_ROW_CACHE.clear();
+}
 
+function materialSearchMeta(material){
+  const key=txt(material);
+  if(SEARCH_MATERIAL_CACHE.has(key))return SEARCH_MATERIAL_CACHE.get(key);
+
+  const names=[key];
   for(const lang of I18N_LANGS){
-    values.push(translatedMaterialName(material,lang));
+    names.push(translatedMaterialName(key,lang));
   }
 
+  const categories=[];
   try{
-    const key=categoryKeyForMaterial(material);
+    const categoryKey=categoryKeyForMaterial(key);
     for(const lang of I18N_LANGS){
-      values.push(categoryLabelByKey(key,lang));
+      categories.push(categoryLabelByKey(categoryKey,lang));
     }
   }catch(e){}
 
+  const extra=[];
   try{
-    const profile=getMaterialProfile(material)||{};
-    values.push(
+    const profile=getMaterialProfile(key)||{};
+    extra.push(
       profile.manufacturer,
       profile.supplier,
       profile.internalCode,
@@ -2656,24 +2668,44 @@ function materialSearchAliases(material){
       profile.defaultAirAssist,
       profile.ralCode
     );
-
     for(const lang of I18N_LANGS){
       const t=profile.translations?.[lang]||{};
-      values.push(t.name,t.description,t.safetyText,t.notes);
+      extra.push(t.name,t.description,t.safetyText,t.notes);
     }
   }catch(e){}
 
-  return values.filter(Boolean);
+  const normalizedNames=[...new Set(names.filter(Boolean).map(normalizeSearchText).filter(Boolean))];
+  const normalizedCategories=[...new Set(categories.filter(Boolean).map(normalizeSearchText).filter(Boolean))];
+  const aliases=[...names,...categories,...extra].filter(Boolean);
+  const normalizedAliases=normalizeSearchText(aliases.join(' '));
+
+  const meta={aliases,normalizedAliases,normalizedNames,normalizedCategories};
+  SEARCH_MATERIAL_CACHE.set(key,meta);
+  return meta;
+}
+
+function materialSearchAliases(material){
+  return materialSearchMeta(material).aliases;
 }
 
 function searchHaystackForRow(r){
+  const status=statusOf(r);
+  const cacheKey=[
+    r.id,status,r.bewerking,r.opmerking,r.source,r.reliability,
+    r.laserWatt,r.dikte,r.vermogen,r.createdByName,r.createdByEmail,r.updatedByName
+  ].join('\u0001');
+
+  const cached=SEARCH_ROW_CACHE.get(cacheKey);
+  if(cached!==undefined)return cached;
+
+  const materialMeta=materialSearchMeta(r.materiaal);
   const values=[
-    ...materialSearchAliases(r.materiaal),
+    materialMeta.normalizedAliases,
     r.bewerking,
     r.opmerking,
     r.source,
     r.reliability,
-    statusOf(r),
+    status,
     `${r.laserWatt} w`,
     `${r.dikte} mm`,
     `${r.vermogen}%`,
@@ -2687,36 +2719,48 @@ function searchHaystackForRow(r){
       trExact(r.bewerking,lang),
       trExact(r.source,lang),
       trExact(r.reliability,lang),
-      trExact(statusOf(r),lang)
+      trExact(status,lang)
     );
   }
 
-  return normalizeSearchText(values.filter(Boolean).join(' '));
+  const hay=normalizeSearchText(values.filter(Boolean).join(' '));
+  SEARCH_ROW_CACHE.set(cacheKey,hay);
+  return hay;
 }
 
-function searchRankForRow(r,q){
-  const p=smartParsed(q);
-  const term=normalizeSearchText(p.terms.join(' '));
+function buildSearchContext(q){
+  const parsed=smartParsed(q);
+  const terms=parsed.terms.map(normalizeSearchText).filter(Boolean);
+  return {
+    ...parsed,
+    terms,
+    rankTerm:normalizeSearchText(parsed.terms.join(' '))
+  };
+}
+
+function matchesSmartContext(r,ctx){
+  if(ctx.mm!==null&&Number(r.dikte)!==ctx.mm)return false;
+  if(ctx.pct!==null&&Number(r.vermogen)!==ctx.pct)return false;
+  if(ctx.op&&r.bewerking!==ctx.op)return false;
+  if(!ctx.terms.length)return true;
+
+  const hay=searchHaystackForRow(r);
+  return ctx.terms.every(term=>hay.includes(term));
+}
+
+function searchRankForMaterial(material,ctx){
+  const term=ctx.rankTerm;
   if(!term)return 20;
 
-  const materialNames=materialSearchAliases(r.materiaal)
-    .slice(0,1 + I18N_LANGS.length)
-    .map(normalizeSearchText)
-    .filter(Boolean);
+  const meta=materialSearchMeta(material);
 
-  if(materialNames.some(name=>name===term))return 0;
-  if(materialNames.some(name=>name.startsWith(term)))return 1;
-  if(materialNames.some(name=>name.includes(term)))return 2;
+  if(meta.normalizedNames.some(name=>name===term))return 0;
+  if(meta.normalizedNames.some(name=>name.startsWith(term)))return 1;
+  if(meta.normalizedNames.some(name=>name.includes(term)))return 2;
 
-  try{
-    const key=categoryKeyForMaterial(r.materiaal);
-    const categories=I18N_LANGS
-      .map(lang=>normalizeSearchText(categoryLabelByKey(key,lang)))
-      .filter(Boolean);
-    if(categories.some(name=>name===term))return 3;
-    if(categories.some(name=>name.startsWith(term)))return 4;
-    if(categories.some(name=>name.includes(term)))return 5;
-  }catch(e){}
+  if(meta.normalizedCategories.some(name=>name===term))return 3;
+  if(meta.normalizedCategories.some(name=>name.startsWith(term)))return 4;
+  if(meta.normalizedCategories.some(name=>name.includes(term)))return 5;
 
   return 10;
 }
@@ -2745,17 +2789,59 @@ function smartParsed(q){
 }
 function matchesSmart(r,q){
   if(!txt(q).trim())return true;
-  const p=smartParsed(q);
-  if(p.mm!==null&&Number(r.dikte)!==p.mm)return false;
-  if(p.pct!==null&&Number(r.vermogen)!==p.pct)return false;
-  if(p.op&&r.bewerking!==p.op)return false;
-
-  const hay=searchHaystackForRow(r);
-  return p.terms.every(t=>hay.includes(normalizeSearchText(t)));
+  return matchesSmartContext(r,buildSearchContext(q));
 }
-function filteredRows(){const q=$('filterSearch').value.trim(),exact=$('filterExactMaterial').checked,exactMaterial=exact?exactMaterialForQuery(q):null,lw=$('filterLaserWatt').value,th=$('filterThickness').value,op=$('filterOperation').value,pw=$('filterPower').value,st=$('filterStatus').value,rel=$('filterReliability').value;return rows.filter(r=>(exact?(exactMaterial!==null&&r.materiaal===exactMaterial):matchesSmart(r,q))&&(!lw||String(r.laserWatt)===lw)&&(!th||String(r.dikte)===th)&&(!op||r.bewerking===op)&&(!pw||String(r.vermogen)===pw)&&(!st||statusOf(r)===st)&&(!rel||r.reliability===rel)).sort((a,b)=>{if(q&&!exact){const d=searchRankForRow(a,q)-searchRankForRow(b,q);if(d)return d}return sortRows(a,b)})}
+function filteredRows(){
+  const q=$('filterSearch').value.trim();
+  const exact=$('filterExactMaterial').checked;
+  const exactMaterial=exact?exactMaterialForQuery(q):null;
+  const lw=$('filterLaserWatt').value;
+  const th=$('filterThickness').value;
+  const op=$('filterOperation').value;
+  const pw=$('filterPower').value;
+  const st=$('filterStatus').value;
+  const rel=$('filterReliability').value;
+  const ctx=q&&!exact?buildSearchContext(q):null;
+
+  if(q&&!exact){
+    const buckets=Array.from({length:11},()=>[]);
+    const rankCache=new Map();
+
+    for(const r of rows){
+      // Goedkope filters eerst, vóór de tekstindex wordt geraadpleegd.
+      if(lw&&String(r.laserWatt)!==lw)continue;
+      if(th&&String(r.dikte)!==th)continue;
+      if(op&&r.bewerking!==op)continue;
+      if(pw&&String(r.vermogen)!==pw)continue;
+      if(st&&statusOf(r)!==st)continue;
+      if(rel&&r.reliability!==rel)continue;
+      if(!matchesSmartContext(r,ctx))continue;
+
+      let rank=rankCache.get(r.materiaal);
+      if(rank===undefined){
+        rank=searchRankForMaterial(r.materiaal,ctx);
+        rankCache.set(r.materiaal,rank);
+      }
+      buckets[Math.max(0,Math.min(10,rank))].push(r);
+    }
+
+    // rows zijn reeds sortRows-gesorteerd. Door per relevantiebak te
+    // verzamelen vermijden we een zware n log n-sortering.
+    return buckets.flat();
+  }
+
+  return rows.filter(r=>
+    (exact?(exactMaterial!==null&&r.materiaal===exactMaterial):true)&&
+    (!lw||String(r.laserWatt)===lw)&&
+    (!th||String(r.dikte)===th)&&
+    (!op||r.bewerking===op)&&
+    (!pw||String(r.vermogen)===pw)&&
+    (!st||statusOf(r)===st)&&
+    (!rel||r.reliability===rel)
+  );
+}
 function activeFilters(){return $('filterExactMaterial').checked||['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].some(id=>txt($(id).value).trim()!=='')}
-function fillOptions(){const mats=unique('materiaal').sort((a,b)=>translatedMaterialName(a,currentLanguage).localeCompare(translatedMaterialName(b,currentLanguage),currentLocale()));fillMaterialCategoryOptions();fillEditorMaterialSelect($('editMaterialSelect')?.value||'');fillSearchMaterialDatalist();const laserOptions=LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');const currentFilter=$('filterLaserWatt').value,currentEdit=$('editLaserWatt').value,currentTest=$('testLaserWatt').value;$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+laserOptions;$('editLaserWatt').innerHTML=laserOptions;$('testLaserWatt').innerHTML=laserOptions;if(LASER_PROFILES.map(String).includes(currentFilter))$('filterLaserWatt').value=currentFilter;if(LASER_PROFILES.map(String).includes(currentEdit))$('editLaserWatt').value=currentEdit;else $('editLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);if(LASER_PROFILES.map(String).includes(currentTest))$('testLaserWatt').value=currentTest;else $('testLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);$('filterOperation').innerHTML=`<option value="">${esc(tr('Alle'))}</option>`+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(tr(v))}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(translatedMaterialName(v))}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');const sub=document.querySelector('.brandsub');if(sub)sub.textContent=LASER_PROFILES.map(v=>`${v} W`).join(' · ')}
+function fillOptions(){clearSearchCaches();const mats=unique('materiaal').sort((a,b)=>translatedMaterialName(a,currentLanguage).localeCompare(translatedMaterialName(b,currentLanguage),currentLocale()));fillMaterialCategoryOptions();fillEditorMaterialSelect($('editMaterialSelect')?.value||'');fillSearchMaterialDatalist();const laserOptions=LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');const currentFilter=$('filterLaserWatt').value,currentEdit=$('editLaserWatt').value,currentTest=$('testLaserWatt').value;$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+laserOptions;$('editLaserWatt').innerHTML=laserOptions;$('testLaserWatt').innerHTML=laserOptions;if(LASER_PROFILES.map(String).includes(currentFilter))$('filterLaserWatt').value=currentFilter;if(LASER_PROFILES.map(String).includes(currentEdit))$('editLaserWatt').value=currentEdit;else $('editLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);if(LASER_PROFILES.map(String).includes(currentTest))$('testLaserWatt').value=currentTest;else $('testLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);$('filterOperation').innerHTML=`<option value="">${esc(tr('Alle'))}</option>`+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(tr(v))}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(translatedMaterialName(v))}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');const sub=document.querySelector('.brandsub');if(sub)sub.textContent=LASER_PROFILES.map(v=>`${v} W`).join(' · ')}
 function num(v,unit=''){if(v===''||v===null||v===undefined)return '<span style="color:#9aa5b5">—</span>';return `${Number(v).toLocaleString(currentLocale(),{maximumFractionDigits:1})}${unit}`}
 function renderSettings(){const data=filteredRows(),ps=Number($('pageSize').value)||100,pages=Math.max(1,Math.ceil(data.length/ps));if(currentPage>pages)currentPage=pages;const start=(currentPage-1)*ps,shown=data.slice(start,start+ps);$('resultCount').textContent=`${data.length.toLocaleString(currentLocale())} van ${rows.length.toLocaleString(currentLocale())} instellingen`;$('bulkDeleteBtn').disabled=!can('admin')||!activeFilters()||!data.length;$('bulkDeleteBtn').textContent=activeFilters()?`Bulk verwijderen (${data.length.toLocaleString(currentLocale())})`:'Bulk verwijderen';$('settingsBody').innerHTML=shown.length?shown.map(r=>`<tr><td><button class="star ${state.favorites.includes(r.id)?'on':''}" onclick="toggleFavorite('${r.id}')" title="${esc(tr('Favoriet'))}">★</button></td><td>${statusPill(r)}</td><td class="num"><strong>${Number(r.laserWatt)||70} W</strong></td><td><span class="pill ${r.bewerking==='Snijden'?'opCut':'opEngrave'}">${esc(tr(r.bewerking))}</span></td><td><strong>${esc(translatedMaterialName(r.materiaal))}</strong></td><td class="num">${r.dikte!==''?num(r.dikte,' mm'):'—'}</td><td class="num">${num(r.vermogen,'%')}</td><td class="num">${num(r.effectief,' W')}</td><td class="num">${r.snelheid!==''?num(r.snelheid,' mm/min'):'—'}</td><td class="num">${r.passes!==''?num(r.passes):'—'}</td><td>${relPill(r)}</td><td class="actions"><button class="btn secondary sm" onclick="openDetails('${r.id}')">Details</button>${can('edit')?` <button class="btn secondary sm" onclick="openEditor('${r.id}')">Wijzig</button>`:''}${can('admin')?` <button class="btn danger sm" onclick="deleteRow('${r.id}')">Verwijder</button>`:''}</td></tr>`).join(''):`<tr><td colspan="12" class="empty">Geen instellingen gevonden. Pas de filters aan.</td></tr>`;$('pageInfo').textContent=data.length?`Pagina ${currentPage} van ${pages} · ${start+1}–${Math.min(start+ps,data.length)}`:'Geen resultaten';$('prevPage').disabled=currentPage<=1;$('nextPage').disabled=currentPage>=pages}
 
@@ -3166,7 +3252,22 @@ document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>s
 $('confirmOk').onclick=()=>{if(!$('confirmTypeWrap').classList.contains('hidden')){const typed=$('confirmType').value.trim().toUpperCase();const allowed=['VERWIJDER',trExact('VERWIJDER').toUpperCase()];if(!allowed.includes(typed))return toast('Typ exact VERWIJDER om verder te gaan.','bad')}finishConfirm(true)};
 $('refreshUsersBtn').onclick=()=>refreshCentralMeta();$('saveUserBtn').onclick=saveUser;$('historyCsvBtn').onclick=exportCentralHistoryCsv;$('historyRefreshBtn').onclick=()=>refreshCentralMeta();$('historySearch').oninput=renderHistory;$('historyTypeFilter').onchange=renderHistory;$('centralBackupBtn').onclick=exportCentralBackup;$('copySystemReportBtn').onclick=copySystemReport;$('mobileMenu').onclick=()=>$('sidebar').classList.toggle('open');$('lockBtn').onclick=logout;$('helpBtn').onclick=()=>openModal('helpBackdrop');$('saveClerkKeyBtn').onclick=()=>{const key=$('clerkKeyInput').value.trim();if(!key.startsWith('pk_'))return toast('Gebruik de Clerk Publishable Key die met pk_ begint.','bad');localStorage.setItem(CLERK_KEY_STORAGE,key);document.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content',key);toast('Clerk gekoppeld. index.html wordt aangemaakt.');setTimeout(downloadPortable,150)};$('resetClerkKeyBtn').onclick=()=>{localStorage.removeItem(CLERK_KEY_STORAGE);document.querySelector('meta[name="clerk-publishable-key"]').setAttribute('content','');location.reload()};
 $('dashNew').onclick=()=>openEditor();$('dashTest').onclick=()=>showView('tests');$('newRowBtn').onclick=()=>openEditor();$('bulkDeleteBtn').onclick=bulkDelete;$('exportCsvBtn').onclick=exportCsv;$('backupBtn').onclick=exportBackup;$('portableBtn').onclick=downloadPortable;$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value=''};
-['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).addEventListener(id==='filterSearch'?'input':'change',()=>{currentPage=1;renderSettings()}));$('filterExactMaterial').addEventListener('change',()=>{currentPage=1;renderSettings()});$('clearFiltersBtn').onclick=()=>{['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).value='');$('filterExactMaterial').checked=false;currentPage=1;renderSettings()};$('pageSize').onchange=()=>{currentPage=1;renderSettings()};$('prevPage').onclick=()=>{currentPage=Math.max(1,currentPage-1);renderSettings()};$('nextPage').onclick=()=>{currentPage++;renderSettings()};
+function scheduleFilterSearch(){
+  clearTimeout(filterSearchTimer);
+  filterSearchTimer=setTimeout(()=>{
+    currentPage=1;
+    renderSettings();
+  },100);
+}
+$('filterSearch').addEventListener('input',scheduleFilterSearch);
+$('filterSearch').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    clearTimeout(filterSearchTimer);
+    currentPage=1;
+    renderSettings();
+  }
+});
+['filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).addEventListener('change',()=>{currentPage=1;renderSettings()}));$('filterExactMaterial').addEventListener('change',()=>{currentPage=1;renderSettings()});$('clearFiltersBtn').onclick=()=>{clearTimeout(filterSearchTimer);['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).value='');$('filterExactMaterial').checked=false;currentPage=1;renderSettings()};$('pageSize').onchange=()=>{currentPage=1;renderSettings()};$('prevPage').onclick=()=>{currentPage=Math.max(1,currentPage-1);renderSettings()};$('nextPage').onclick=()=>{currentPage++;renderSettings()};
 function submitGlobalSearch(){
   const query=$('globalSearch').value.trim();
   showView('settings');
