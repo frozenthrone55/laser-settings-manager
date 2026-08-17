@@ -23,11 +23,17 @@ function fallbackStore() {
 }
 
 const AUTHORIZED_PARTIES = [
+  // Oude omgeving tijdelijk behouden tijdens de gecontroleerde verhuis.
   "https://laser-settings-manager.netlify.app",
   "https://development--laser-settings-manager.netlify.app",
+
+  // Nieuwe v3-omgeving.
+  "https://laser-settings-manager-v3.netlify.app",
+  "https://development--laser-settings-manager-v3.netlify.app",
 ];
 
 const MAX_JSON_BODY_BYTES = 128 * 1024;
+const MAX_MIGRATION_BODY_BYTES = 5 * 1024 * 1024;
 
 function requestSourceAllowed(request) {
   const origin = request.headers.get("origin");
@@ -42,7 +48,15 @@ function requestBodyAllowed(request) {
   const raw = request.headers.get("content-length");
   if (!raw) return true;
   const length = Number(raw);
-  return Number.isFinite(length) && length >= 0 && length <= MAX_JSON_BODY_BYTES;
+  if (!Number.isFinite(length) || length < 0) return false;
+
+  const url = new URL(request.url);
+  const maxBytes =
+    url.searchParams.get("migration") === "1"
+      ? MAX_MIGRATION_BODY_BYTES
+      : MAX_JSON_BODY_BYTES;
+
+  return length <= maxBytes;
 }
 
 const BLOB_RETRY_DELAYS = [0, 250, 600, 1200];
@@ -1425,6 +1439,242 @@ async function restoreHistory(historyId, user) {
   return json({ success: true, action: "restore-history" });
 }
 
+
+function cleanImportedStoredRow(input = {}) {
+  const id = shortText(input.id, 180);
+  if (!validId(id)) return null;
+
+  const setting = cleanSetting(input);
+  const error = validateSetting(setting);
+  if (error) return null;
+
+  return storedRow({
+    id,
+    ...setting,
+    createdById: shortText(input.createdById, 180),
+    createdByName: shortText(input.createdByName, 220),
+    createdByEmail: shortText(input.createdByEmail, 320),
+    createdByRole: shortText(input.createdByRole, 30),
+    createdAt: shortText(input.createdAt, 60),
+    updatedById: shortText(input.updatedById, 180),
+    updatedByName: shortText(input.updatedByName, 220),
+    updatedByEmail: shortText(input.updatedByEmail, 320),
+    updatedAt: shortText(input.updatedAt, 60),
+    approvalStatus: ["approved", "pending"].includes(String(input.approvalStatus || ""))
+      ? String(input.approvalStatus)
+      : "approved",
+    approvedById: shortText(input.approvedById, 180),
+    approvedByName: shortText(input.approvedByName, 220),
+    approvedAt: shortText(input.approvedAt, 60),
+  });
+}
+
+function cleanImportedHistoryEntry(input = {}, fallbackIndex = 0) {
+  const originalId = shortText(input.id, 180);
+  const id = validId(originalId)
+    ? originalId
+    : `h-migrated-${Date.now()}-${fallbackIndex}`;
+
+  const rawAt = shortText(input.at, 60);
+  const parsedAt = Date.parse(rawAt);
+  const at = Number.isFinite(parsedAt)
+    ? new Date(parsedAt).toISOString()
+    : new Date().toISOString();
+
+  const rowId = shortText(input.rowId, 180);
+
+  return {
+    id,
+    type: shortText(input.type, 80) || "migration",
+    label: shortText(input.label, 500) || "Gemigreerde geschiedenis",
+    user: shortText(input.user, 220) || "Migratie",
+    userId: shortText(input.userId, 180),
+    userRole: shortText(input.userRole, 30),
+    at,
+    rowId: validId(rowId) ? rowId : "",
+    before:
+      input.before && typeof input.before === "object"
+        ? input.before
+        : null,
+    after:
+      input.after && typeof input.after === "object"
+        ? input.after
+        : null,
+    restorable: Boolean(input.restorable),
+  };
+}
+
+async function importCentralBackup(body, user) {
+  if (user.role !== "admin") {
+    return json(
+      { success: false, error: "Alleen een Beheerder kan een centrale migratie uitvoeren." },
+      403
+    );
+  }
+
+  if (body.confirmation !== "MIGREER") {
+    return json(
+      { success: false, error: "Typ MIGREER om de centrale database te importeren." },
+      400
+    );
+  }
+
+  const backup = body.backup;
+  if (
+    !backup ||
+    typeof backup !== "object" ||
+    backup.backupType !== "central-database" ||
+    !backup.central ||
+    typeof backup.central !== "object"
+  ) {
+    return json(
+      { success: false, error: "Dit is geen geldige centrale Laser Settings-back-up." },
+      400
+    );
+  }
+
+  const source = backup.central;
+  const rawUpserts = Array.isArray(source.patch?.upserts) ? source.patch.upserts : [];
+  const rawDeleted = Array.isArray(source.patch?.deleted) ? source.patch.deleted : [];
+  const rawProfiles =
+    source.materialProfiles && typeof source.materialProfiles === "object"
+      ? source.materialProfiles
+      : {};
+  const rawCategories =
+    source.customCategories && typeof source.customCategories === "object"
+      ? source.customCategories
+      : {};
+  const rawHistory = Array.isArray(source.history) ? source.history : [];
+  const rawRenames =
+    source.materialRenames && typeof source.materialRenames === "object"
+      ? source.materialRenames
+      : {};
+  const rawLaserProfiles = Array.isArray(source.laserProfiles)
+    ? source.laserProfiles
+    : BUILTIN_LASER_PROFILES;
+
+  // Defensieve bovengrenzen voor een handmatige migratie.
+  if (
+    rawUpserts.length > 10000 ||
+    rawDeleted.length > 10000 ||
+    Object.keys(rawProfiles).length > 1500 ||
+    Object.keys(rawCategories).length > 1500 ||
+    rawHistory.length > 1000
+  ) {
+    return json(
+      { success: false, error: "De back-up bevat onverwacht veel gegevens en is uit veiligheid geweigerd." },
+      413
+    );
+  }
+
+  const upserts = rawUpserts
+    .map((row) => cleanImportedStoredRow(row))
+    .filter(Boolean);
+
+  const deleted = [...new Set(
+    rawDeleted
+      .map((id) => shortText(id, 180))
+      .filter((id) => validId(id))
+  )];
+
+  const profiles = {};
+  for (const [materialRaw, profileRaw] of Object.entries(rawProfiles)) {
+    const material = shortText(materialRaw, 180);
+    if (!material) continue;
+    profiles[material] = cleanMaterialProfile(profileRaw || {});
+  }
+
+  const categories = {};
+  for (const categoryRaw of Object.values(rawCategories)) {
+    const category = cleanCustomCategory(categoryRaw || {});
+    if (!category) continue;
+    categories[category.id] = category;
+  }
+
+  const renames = cleanMaterialRenames(rawRenames);
+  const laserProfiles = cleanLaserProfiles(rawLaserProfiles);
+  const history = rawHistory.map(cleanImportedHistoryEntry);
+
+  // Schrijfacties zijn idempotent: opnieuw uitvoeren overschrijft dezelfde
+  // sleutels in plaats van duplicaten te maken.
+  for (const row of upserts) {
+    await primaryStore().setJSON(`upserts/${row.id}`, row);
+  }
+
+  for (const id of deleted) {
+    await primaryStore().setJSON(`deleted/${id}`, {
+      id,
+      deletedAt: new Date().toISOString(),
+      deletedById: user.id,
+      deletedByName: user.name,
+      reason: "database_migration",
+    });
+  }
+
+  for (const [material, profile] of Object.entries(profiles)) {
+    await primaryStore().setJSON(profileBlobKey(material), {
+      material,
+      profile,
+      updatedAt: new Date().toISOString(),
+      updatedById: user.id,
+      updatedByName: user.name,
+      migrated: true,
+    });
+  }
+
+  for (const category of Object.values(categories)) {
+    await primaryStore().setJSON(categoryBlobKey(category.id), {
+      category,
+      updatedAt: new Date().toISOString(),
+      updatedById: user.id,
+      updatedByName: user.name,
+      migrated: true,
+    });
+  }
+
+  await saveMaterialRenames(renames, user);
+  await saveLaserProfiles(laserProfiles, user);
+
+  for (let i = 0; i < history.length; i += 1) {
+    const entry = history[i];
+    const stamp = String(Date.parse(entry.at) || Date.now()).padStart(13, "0");
+    await primaryStore().setJSON(`history/${stamp}-${entry.id}`, entry);
+  }
+
+  await addHistoryEntry({
+    type: "database_migration",
+    label: `Centrale database gemigreerd: ${upserts.length} wijzigingen, ${profiles ? Object.keys(profiles).length : 0} materiaalprofielen`,
+    user,
+    rowId: "",
+    before: null,
+    after: {
+      sourceVersion: shortText(backup.version, 40),
+      sourceApiVersion: backup.apiVersion ?? null,
+      sourceExportedAt: shortText(backup.exportedAt, 60),
+      upserts: upserts.length,
+      deleted: deleted.length,
+      materialProfiles: Object.keys(profiles).length,
+      customCategories: Object.keys(categories).length,
+      history: history.length,
+      laserProfiles: laserProfiles.length,
+    },
+    restorable: false,
+  });
+
+  return json({
+    success: true,
+    action: "import-central-backup",
+    imported: {
+      upserts: upserts.length,
+      deleted: deleted.length,
+      materialProfiles: Object.keys(profiles).length,
+      customCategories: Object.keys(categories).length,
+      history: history.length,
+      laserProfiles: laserProfiles.length,
+    },
+  });
+}
+
 async function handlePatch(request, user) {
   const body = await request.json().catch(() => ({}));
   switch (body.action) {
@@ -1454,6 +1704,8 @@ async function handlePatch(request, user) {
       return addLaserProfile(body, user);
     case "remove-laser-profile":
       return removeLaserProfile(body, user);
+    case "import-central-backup":
+      return importCentralBackup(body, user);
     default:
       return json({ success: false, error: "Onbekende beheeractie." }, 400);
   }
@@ -1489,7 +1741,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 13,
+        version: 14,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         materialProfiles,
