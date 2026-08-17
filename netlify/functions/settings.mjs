@@ -1222,10 +1222,6 @@ async function addSetting(request, user) {
 }
 
 async function updateSetting(request, user) {
-  if (user.role !== "admin") {
-    return json({ success: false, error: "Alleen een Beheerder mag instellingen wijzigen." }, 403);
-  }
-
   const body = await request.json().catch(() => ({}));
   const id = body.id;
   if (!validId(id)) return json({ success: false, error: "Ongeldig instelling-ID." }, 400);
@@ -1234,16 +1230,27 @@ async function updateSetting(request, user) {
   const error = validateSetting(setting);
   if (error) return json({ success: false, error }, 400);
 
+  // Eigenaarschap wordt uitsluitend tegen de centrale Blob gecontroleerd.
+  // Gegevens uit body.before komen uit de browser en zijn geen bewijs van eigenaarschap.
   const existingStored = await primaryStore().get(`upserts/${id}`, {
     type: "json",
     consistency: "strong",
   });
+  const existing = storedRow(existingStored);
+
+  if (user.role !== "admin") {
+    if (!existing || !existing.createdById || existing.createdById !== user.id) {
+      return json(
+        { success: false, error: "Je mag alleen instellingen wijzigen die je zelf hebt toegevoegd." },
+        403
+      );
+    }
+  }
 
   const suppliedBefore = body.before && typeof body.before === "object"
     ? { id, ...cleanSetting(body.before) }
     : null;
 
-  const existing = storedRow(existingStored);
   const before = existing || suppliedBefore || { id };
   const now = new Date().toISOString();
 
@@ -1294,10 +1301,15 @@ async function updateSetting(request, user) {
     rowId: id,
     before,
     after: row,
-    restorable: true,
+    restorable: user.role === "admin",
   });
 
-  return json({ success: true, action: "update", row });
+  return json({
+    success: true,
+    action: "update",
+    row: rowForUser(row, user),
+    ownerEdit: user.role !== "admin",
+  });
 }
 
 async function deleteSettings(request, user) {
@@ -1819,7 +1831,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 16,
+        version: 17,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         materialProfiles,
