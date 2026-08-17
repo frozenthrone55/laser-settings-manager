@@ -735,7 +735,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='3.1.4-dev';
+const APP_VERSION='3.2.0-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -1277,9 +1277,37 @@ const fmtDate=v=>{if(!v)return '—';try{return new Intl.DateTimeFormat(currentL
 function laserWattOf(r){const direct=Number(r?.laserWatt);if(Number.isFinite(direct)&&direct>0)return direct;const m=txt(r?.machine).match(/(10|20|40|70)\s*W/i);return m?Number(m[1]):70}
 function effectiveWatt(laserWatt,pct){const w=Number(laserWatt),p=Number(pct);return Number.isFinite(w)&&Number.isFinite(p)?Math.round((w*p/100)*10)/10:''}
 function defaultMeta(r){const note=txt(r.opmerking).toLowerCase();const no=(!r.snelheid&&txt(r.bewerking).toLowerCase().startsWith('snij'))||note.includes('niet aanbevolen');const lw=laserWattOf(r);return {source:'Samengestelde referentie',reliability:no?'Experimenteel':'Gemiddeld',tested:false,machine:`${lw} W diode-laser`,testedAt:''};}
-function normalizeRow(r,i=0){const d=defaultMeta(r),laserWatt=laserWattOf(r);return {id:txt(r.id)||('u-'+Date.now()+'-'+i+'-'+Math.random().toString(36).slice(2)),materiaal:txt(r.materiaal),bewerking:txt(r.bewerking),dikte:r.dikte??'',laserWatt,vermogen:r.vermogen??'',effectief:r.effectief!==''&&r.effectief!==undefined&&r.effectief!==null?r.effectief:effectiveWatt(laserWatt,r.vermogen),snelheid:r.snelheid??'',passes:r.passes??'',airAssist:txt(r.airAssist),opmerking:txt(r.opmerking),source:r.source||d.source,reliability:r.reliability||d.reliability,tested:Boolean(r.tested),machineBrand:txt(r.machineBrand),machineModel:txt(r.machineModel),machine:r.machine||d.machine,testedAt:r.testedAt||'',createdById:txt(r.createdById),createdByName:txt(r.createdByName),createdByEmail:txt(r.createdByEmail),createdByRole:txt(r.createdByRole),createdAt:r.createdAt||'',updatedById:txt(r.updatedById),updatedByName:txt(r.updatedByName),updatedByEmail:txt(r.updatedByEmail),updatedAt:r.updatedAt||'',approvalStatus:txt(r.approvalStatus)||'approved',approvedById:txt(r.approvedById),approvedByName:txt(r.approvedByName),approvedAt:r.approvedAt||''};}
+function normalizeRow(r,i=0){const d=defaultMeta(r),laserWatt=laserWattOf(r);return {id:txt(r.id)||('u-'+Date.now()+'-'+i+'-'+Math.random().toString(36).slice(2)),materiaal:txt(r.materiaal),bewerking:txt(r.bewerking),dikte:r.dikte??'',laserWatt,vermogen:r.vermogen??'',effectief:r.effectief!==''&&r.effectief!==undefined&&r.effectief!==null?r.effectief:effectiveWatt(laserWatt,r.vermogen),snelheid:r.snelheid??'',passes:r.passes??'',airAssist:txt(r.airAssist),opmerking:txt(r.opmerking),source:r.source||d.source,reliability:r.reliability||d.reliability,tested:Boolean(r.tested),machineBrand:txt(r.machineBrand),machineModel:txt(r.machineModel),machine:r.machine||d.machine,testedAt:r.testedAt||'',testedById:txt(r.testedById),testedByName:txt(r.testedByName),testedByEmail:txt(r.testedByEmail),createdById:txt(r.createdById),createdByName:txt(r.createdByName),createdByEmail:txt(r.createdByEmail),createdByRole:txt(r.createdByRole),createdAt:r.createdAt||'',updatedById:txt(r.updatedById),updatedByName:txt(r.updatedByName),updatedByEmail:txt(r.updatedByEmail),updatedAt:r.updatedAt||'',approvalStatus:txt(r.approvalStatus)||'approved',approvedById:txt(r.approvedById),approvedByName:txt(r.approvedByName),approvedAt:r.approvedAt||''};}
 function auditForNew(){return {createdById:txt(currentUser?.id),createdByName:txt(currentUser?.username)||'Gebruiker',createdByEmail:txt(currentUser?.email),createdByRole:txt(currentUser?.role),createdAt:nowIso(),updatedById:'',updatedByName:'',updatedByEmail:'',updatedAt:''}}
 function auditForEdit(){return {updatedById:txt(currentUser?.id),updatedByName:txt(currentUser?.username)||'Gebruiker',updatedByEmail:txt(currentUser?.email),updatedAt:nowIso()}}
+
+function isTestedByCurrentUser(r){
+  if(!r?.tested||r.approvalStatus==='pending'||!currentUser)return false;
+
+  const userId=txt(currentUser.id);
+  const userEmail=txt(currentUser.email).trim().toLowerCase();
+  const testedById=txt(r.testedById);
+  const testedByEmail=txt(r.testedByEmail).trim().toLowerCase();
+
+  // Nieuwe API v16-rijen hebben een expliciete tester.
+  if(testedById)return Boolean(userId&&testedById===userId);
+  if(testedByEmail)return Boolean(userEmail&&testedByEmail===userEmail);
+
+  // Offline/legacy fallback: alleen duidelijke eigen tests toewijzen.
+  if(txt(r.source)==='Eigen test'){
+    if(r.updatedById&&r.testedAt&&r.updatedAt){
+      const testedAt=Date.parse(r.testedAt);
+      const updatedAt=Date.parse(r.updatedAt);
+      if(Number.isFinite(testedAt)&&Number.isFinite(updatedAt)&&Math.abs(testedAt-updatedAt)<=5*60*1000){
+        return Boolean(userId&&txt(r.updatedById)===userId);
+      }
+    }
+    if(r.createdById)return Boolean(userId&&txt(r.createdById)===userId);
+    if(r.createdByEmail)return Boolean(userEmail&&txt(r.createdByEmail).trim().toLowerCase()===userEmail);
+  }
+
+  return false;
+}
 
 function roundSpeed(v,step=10){if(!Number.isFinite(v)||v<=0)return '';return Math.max(step,Math.round(v/step)*step)}
 function seedGroupKey(r){return `${txt(r.materiaal)}|${txt(r.bewerking)}|${txt(r.dikte)}`}
@@ -3614,7 +3642,7 @@ function renderDashboard(){
   if(!Array.isArray(state.favorites))state.favorites=[];
 
   const materials=unique('materiaal').length;
-  const tested=rows.filter(r=>r.tested&&r.approvalStatus!=='pending').length;
+  const tested=rows.filter(isTestedByCurrentUser).length;
   const notRec=rows.filter(r=>statusOf(r)==='Niet aanbevolen').length;
   const favs=state.favorites.length;
 
