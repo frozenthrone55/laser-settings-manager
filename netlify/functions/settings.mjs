@@ -23,11 +23,12 @@ function fallbackStore() {
 }
 
 const AUTHORIZED_PARTIES = [
-  "https://laser-settings-manager.netlify.app",
-  "https://development--laser-settings-manager.netlify.app",
+  "https://laser-settings-manager-v3.netlify.app",
+  "https://development--laser-settings-manager-v3.netlify.app",
 ];
 
-const MAX_JSON_BODY_BYTES = 64 * 1024;
+const MAX_JSON_BODY_BYTES = 128 * 1024;
+const MAX_MIGRATION_BODY_BYTES = 5 * 1024 * 1024;
 
 function requestSourceAllowed(request) {
   const origin = request.headers.get("origin");
@@ -42,7 +43,15 @@ function requestBodyAllowed(request) {
   const raw = request.headers.get("content-length");
   if (!raw) return true;
   const length = Number(raw);
-  return Number.isFinite(length) && length >= 0 && length <= MAX_JSON_BODY_BYTES;
+  if (!Number.isFinite(length) || length < 0) return false;
+
+  const url = new URL(request.url);
+  const maxBytes =
+    url.searchParams.get("migration") === "1"
+      ? MAX_MIGRATION_BODY_BYTES
+      : MAX_JSON_BODY_BYTES;
+
+  return length <= maxBytes;
 }
 
 const BLOB_RETRY_DELAYS = [0, 250, 600, 1200];
@@ -150,6 +159,8 @@ const SETTING_FIELDS = [
   "reliability",
   "tested",
   "machine",
+  "machineBrand",
+  "machineModel",
   "laserWatt",
   "testedAt",
 ];
@@ -168,6 +179,160 @@ function shortText(value, max) {
   return String(value ?? "").trim().slice(0, max);
 }
 
+const PROFILE_LANGS = ["nl", "en", "fr", "de"];
+const PROFILE_VISUAL_MODES = new Set(["", "url", "upload", "ral", "transparent"]);
+const PROFILE_SAFETY_LEVELS = new Set(["", "ok", "warn", "danger"]);
+
+function safeColor(value, fallback = "") {
+  const s = shortText(value, 20);
+  return /^#[0-9a-f]{6}$/i.test(s) ? s.toLowerCase() : fallback;
+}
+
+function cleanProfileTranslations(input = {}) {
+  const result = {};
+  for (const lang of PROFILE_LANGS) {
+    const item = input?.[lang] && typeof input[lang] === "object" ? input[lang] : {};
+    result[lang] = {
+      name: shortText(item.name, 180),
+      description: shortText(item.description, 3000),
+      safetyText: shortText(item.safetyText, 4000),
+      notes: shortText(item.notes, 4000),
+    };
+  }
+  return result;
+}
+
+function cleanMaterialProfile(input = {}) {
+  const visualMode = PROFILE_VISUAL_MODES.has(String(input.visualMode || ""))
+    ? String(input.visualMode || "")
+    : "";
+
+  const safetyLevel = PROFILE_SAFETY_LEVELS.has(String(input.safetyLevel || ""))
+    ? String(input.safetyLevel || "")
+    : "";
+
+  let image = shortText(input.image, 60000);
+  if (image && !/^https?:\/\//i.test(image) && !/^data:image\//i.test(image)) {
+    image = "";
+  }
+
+  return {
+    categoryKey: shortText(input.categoryKey, 180),
+    category: shortText(input.category, 180),
+    manufacturer: shortText(input.manufacturer, 200),
+    supplier: shortText(input.supplier, 200),
+    internalCode: shortText(input.internalCode, 120),
+    datasheetUrl: /^https?:\/\//i.test(shortText(input.datasheetUrl, 1200)) ? shortText(input.datasheetUrl, 1200) : "",
+    materialColor: safeColor(input.materialColor),
+    transparency: ["", "opaque", "translucent", "transparent"].includes(String(input.transparency || "")) ? String(input.transparency || "") : "",
+    suitability: ["", "both", "cut", "engrave"].includes(String(input.suitability || "")) ? String(input.suitability || "") : "",
+    defaultAirAssist: shortText(input.defaultAirAssist, 180),
+    safetyLevel,
+    visualMode,
+    image,
+    ralCode: shortText(input.ralCode, 30),
+    ralHex: safeColor(input.ralHex),
+    transparentTint: safeColor(input.transparentTint),
+    transparentOpacity:
+      Number.isFinite(Number(input.transparentOpacity))
+        ? Math.max(0.1, Math.min(0.9, Number(input.transparentOpacity)))
+        : "",
+    translations: cleanProfileTranslations(input.translations),
+  };
+}
+
+function cleanCustomCategory(input = {}) {
+  const id = shortText(input.id, 180);
+  if (!validId(id)) return null;
+
+  const translations = {};
+  for (const lang of PROFILE_LANGS) {
+    translations[lang] = shortText(input?.translations?.[lang], 180);
+  }
+
+  if (!PROFILE_LANGS.every((lang) => translations[lang])) return null;
+
+  return {
+    id,
+    createdAt: shortText(input.createdAt, 60) || new Date().toISOString(),
+    translations,
+  };
+}
+
+function profileBlobKey(material) {
+  const safe = shortText(material, 180);
+  if (!safe) return "";
+  return `material-profiles/${Buffer.from(safe, "utf8").toString("base64url")}`;
+}
+
+function categoryBlobKey(id) {
+  return `material-categories/${id}`;
+}
+
+const BUILTIN_LASER_PROFILES = [10, 20, 40, 70];
+const MATERIAL_RENAMES_KEY = "config/material-renames";
+const LASER_PROFILES_KEY = "config/laser-profiles";
+
+function cleanMaterialRenames(input = {}) {
+  const result = {};
+  for (const [fromRaw, toRaw] of Object.entries(input || {})) {
+    const from = shortText(fromRaw, 180);
+    const to = shortText(toRaw, 180);
+    if (from && to && from !== to) result[from] = to;
+  }
+  return result;
+}
+
+function resolveMaterialRename(value, renames = {}) {
+  let current = shortText(value, 180);
+  const seen = new Set();
+  for (let i = 0; i < 30 && renames[current] && !seen.has(current); i += 1) {
+    seen.add(current);
+    current = shortText(renames[current], 180);
+  }
+  return current;
+}
+
+async function loadMaterialRenames() {
+  const entry = await getBlobResilient(MATERIAL_RENAMES_KEY, "json").catch(() => null);
+  return cleanMaterialRenames(entry?.renames || entry || {});
+}
+
+async function saveMaterialRenames(renames, user) {
+  const clean = cleanMaterialRenames(renames);
+  await primaryStore().setJSON(MATERIAL_RENAMES_KEY, {
+    renames: clean,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  });
+  return clean;
+}
+
+function cleanLaserProfiles(values) {
+  const custom = (Array.isArray(values) ? values : [])
+    .map(Number)
+    .filter((v) => Number.isFinite(v) && v >= 1 && v <= 200)
+    .map((v) => Math.round(v * 10) / 10);
+  return [...new Set([...BUILTIN_LASER_PROFILES, ...custom])].sort((a, b) => a - b);
+}
+
+async function loadLaserProfiles() {
+  const entry = await getBlobResilient(LASER_PROFILES_KEY, "json").catch(() => null);
+  return cleanLaserProfiles(entry?.profiles || []);
+}
+
+async function saveLaserProfiles(profiles, user) {
+  const clean = cleanLaserProfiles(profiles);
+  await primaryStore().setJSON(LASER_PROFILES_KEY, {
+    profiles: clean,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  });
+  return clean;
+}
+
 function cleanSetting(input = {}) {
   const result = {};
 
@@ -183,15 +348,18 @@ function cleanSetting(input = {}) {
   result.opmerking = shortText(result.opmerking, 2500);
   result.source = shortText(result.source || "Eigen instelling", 120);
   result.reliability = shortText(result.reliability || "Gemiddeld", 50);
+  result.machineBrand = shortText(result.machineBrand, 160);
+  result.machineModel = shortText(result.machineModel, 200);
   const parsedLaserWatt =
     Number(result.laserWatt) ||
     Number(String(result.machine || "").match(/(10|20|40|70)\s*W/i)?.[1]) ||
     70;
 
   result.laserWatt = parsedLaserWatt;
+  const explicitMachine = [result.machineBrand, result.machineModel].filter(Boolean).join(" · ");
   result.machine = shortText(
-    result.machine || `${parsedLaserWatt} W diode-laser`,
-    120
+    explicitMachine || result.machine || `${parsedLaserWatt} W diode-laser`,
+    360
   );
 
   const power = Number(result.vermogen);
@@ -272,10 +440,66 @@ function nameForClerkUser(user) {
   );
 }
 
+function testerMetadata(row) {
+  if (!row?.tested) {
+    return { testedById: "", testedByName: "", testedByEmail: "" };
+  }
+
+  const explicit = {
+    testedById: shortText(row.testedById, 180),
+    testedByName: shortText(row.testedByName, 220),
+    testedByEmail: shortText(row.testedByEmail, 320),
+  };
+  if (explicit.testedById || explicit.testedByEmail) return explicit;
+
+  const testedAt = Date.parse(shortText(row.testedAt, 60));
+  const updatedAt = Date.parse(shortText(row.updatedAt, 60));
+  const createdAt = Date.parse(shortText(row.createdAt, 60));
+
+  // Oudere instelling die door een wijziging als Getest werd gemarkeerd.
+  if (
+    shortText(row.updatedById, 180) &&
+    Number.isFinite(testedAt) &&
+    Number.isFinite(updatedAt) &&
+    Math.abs(testedAt - updatedAt) <= 5 * 60 * 1000
+  ) {
+    return {
+      testedById: shortText(row.updatedById, 180),
+      testedByName: shortText(row.updatedByName, 220),
+      testedByEmail: shortText(row.updatedByEmail, 320),
+    };
+  }
+
+  // Een direct als Eigen test aangemaakte instelling hoort bij de maker.
+  if (
+    shortText(row.createdById, 180) &&
+    (
+      shortText(row.source, 120) === "Eigen test" ||
+      (
+        Number.isFinite(testedAt) &&
+        Number.isFinite(createdAt) &&
+        Math.abs(testedAt - createdAt) <= 5 * 60 * 1000
+      )
+    )
+  ) {
+    return {
+      testedById: shortText(row.createdById, 180),
+      testedByName: shortText(row.createdByName, 220),
+      testedByEmail: shortText(row.createdByEmail, 320),
+    };
+  }
+
+  return { testedById: "", testedByName: "", testedByEmail: "" };
+}
+
 function storedRow(row) {
   if (!row) return row;
+  const tester = testerMetadata(row);
   return {
     ...row,
+    testedById: tester.testedById,
+    testedByName: tester.testedByName,
+    testedByEmail: tester.testedByEmail,
     approvalStatus: row.approvalStatus || "approved",
     approvedById: row.approvedById || "",
     approvedByName: row.approvedByName || "",
@@ -290,6 +514,7 @@ function rowForUser(row, user) {
   const result = { ...safe };
   delete result.createdByEmail;
   delete result.updatedByEmail;
+  delete result.testedByEmail;
   return result;
 }
 
@@ -414,6 +639,457 @@ async function loadCentralPatch(user) {
 }
 
 
+
+async function loadMaterialProfiles() {
+  const listing = await listBlobsResilient("material-profiles/", "list material profiles");
+  const entries = (
+    await Promise.all(
+      listing.blobs.map((item) => getBlobResilient(item.key, "json"))
+    )
+  ).filter(Boolean);
+
+  const result = {};
+  for (const entry of entries) {
+    const material = shortText(entry.material, 180);
+    if (!material) continue;
+    result[material] = cleanMaterialProfile(entry.profile || {});
+  }
+  return result;
+}
+
+
+function normalizeCategoryLabel(value) {
+  return shortText(value, 180)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[’‘`´]/g, "'")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function categoryTranslationTokens(category) {
+  return new Set(
+    PROFILE_LANGS
+      .map((lang) => normalizeCategoryLabel(category?.translations?.[lang]))
+      .filter(Boolean)
+  );
+}
+
+function categoriesShareTranslation(a, b) {
+  const aTokens = categoryTranslationTokens(a);
+  const bTokens = categoryTranslationTokens(b);
+  for (const token of aTokens) {
+    if (bTokens.has(token)) return true;
+  }
+  return false;
+}
+
+function duplicateCategoryGroups(categories = {}) {
+  const entries = Object.entries(categories);
+  const parent = new Map(entries.map(([id]) => [id, id]));
+
+  const find = (id) => {
+    let p = parent.get(id);
+    while (p !== parent.get(p)) {
+      parent.set(p, parent.get(parent.get(p)));
+      p = parent.get(p);
+    }
+    return p;
+  };
+
+  const union = (a, b) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent.set(rb, ra);
+  };
+
+  for (let i = 0; i < entries.length; i += 1) {
+    for (let j = i + 1; j < entries.length; j += 1) {
+      if (categoriesShareTranslation(entries[i][1], entries[j][1])) {
+        union(entries[i][0], entries[j][0]);
+      }
+    }
+  }
+
+  const groups = new Map();
+  for (const [id] of entries) {
+    const root = find(id);
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push(id);
+  }
+
+  return [...groups.values()].filter((group) => group.length > 1);
+}
+
+function canonicalCategoryId(ids, categories = {}) {
+  return [...ids].sort((a, b) => {
+    const ca = categories[a];
+    const cb = categories[b];
+    const ta = Date.parse(ca?.createdAt || "") || Number.MAX_SAFE_INTEGER;
+    const tb = Date.parse(cb?.createdAt || "") || Number.MAX_SAFE_INTEGER;
+    return ta - tb || a.localeCompare(b);
+  })[0] || "";
+}
+
+function findExistingCategoryByTranslations(category, categories = {}, excludeId = "") {
+  for (const [id, existing] of Object.entries(categories)) {
+    if (id === excludeId) continue;
+    if (categoriesShareTranslation(category, existing)) return existing;
+  }
+  return null;
+}
+
+async function deduplicateCustomCategories(user) {
+  if (user.role !== "admin") {
+    return json(
+      { success: false, error: "Alleen een Beheerder kan materiaalcategorieën samenvoegen." },
+      403
+    );
+  }
+
+  const categories = await loadCustomCategories();
+  const groups = duplicateCategoryGroups(categories);
+
+  if (!groups.length) {
+    return json({
+      success: true,
+      action: "deduplicate-custom-categories",
+      mergedCount: 0,
+      customCategories: categories,
+      materialProfiles: await loadMaterialProfiles(),
+      remap: {},
+    });
+  }
+
+  const profiles = await loadMaterialProfiles();
+  const remap = {};
+  let mergedCount = 0;
+
+  for (const group of groups) {
+    const canonicalId = canonicalCategoryId(group, categories);
+    const canonical = categories[canonicalId];
+    if (!canonical) continue;
+
+    for (const duplicateId of group) {
+      if (duplicateId === canonicalId) continue;
+      remap[duplicateId] = canonicalId;
+      mergedCount += 1;
+    }
+  }
+
+  // Repoint all material profiles before deleting duplicate categories.
+  for (const [material, profile] of Object.entries(profiles)) {
+    const newCategoryKey = remap[profile.categoryKey];
+    if (!newCategoryKey) continue;
+
+    const updatedProfile = cleanMaterialProfile({
+      ...profile,
+      categoryKey: newCategoryKey,
+      category: "",
+    });
+
+    await primaryStore().setJSON(profileBlobKey(material), {
+      material,
+      profile: updatedProfile,
+      updatedAt: new Date().toISOString(),
+      updatedById: user.id,
+      updatedByName: user.name,
+    });
+
+    profiles[material] = updatedProfile;
+  }
+
+  // Remove duplicate category blobs.
+  for (const duplicateId of Object.keys(remap)) {
+    await primaryStore().delete(categoryBlobKey(duplicateId));
+    delete categories[duplicateId];
+  }
+
+  await addHistoryEntry({
+    type: "material_category_merge",
+    label: `${mergedCount} dubbele materiaalcategorie${mergedCount === 1 ? "" : "ën"} samengevoegd`,
+    user,
+    rowId: "",
+    before: Object.keys(remap),
+    after: remap,
+    restorable: false,
+  });
+
+  return json({
+    success: true,
+    action: "deduplicate-custom-categories",
+    mergedCount,
+    customCategories: categories,
+    materialProfiles: profiles,
+    remap,
+  });
+}
+
+async function loadCustomCategories() {
+  const listing = await listBlobsResilient("material-categories/", "list material categories");
+  const entries = (
+    await Promise.all(
+      listing.blobs.map((item) => getBlobResilient(item.key, "json"))
+    )
+  ).filter(Boolean);
+
+  const result = {};
+  for (const entry of entries) {
+    const category = cleanCustomCategory(entry.category || entry);
+    if (!category) continue;
+    result[category.id] = category;
+  }
+  return result;
+}
+
+async function saveMaterialProfile(body, user) {
+  const material = shortText(body.material, 180);
+  if (!material) {
+    return json({ success: false, error: "Materiaalnaam ontbreekt." }, 400);
+  }
+
+  const key = profileBlobKey(material);
+  const existing = await getBlobResilient(key, "json").catch(() => null);
+
+  // Contributors may create metadata for a genuinely new material, but they
+  // cannot overwrite an existing shared profile.
+  if (existing && user.role !== "admin") {
+    return json(
+      { success: false, error: "Alleen een Beheerder kan een bestaand materiaalprofiel wijzigen." },
+      403
+    );
+  }
+
+  const profile = cleanMaterialProfile(body.profile || {});
+  const stored = {
+    material,
+    profile,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  };
+
+  await primaryStore().setJSON(key, stored);
+
+  await addHistoryEntry({
+    type: existing ? "material_profile_edit" : "material_profile_add",
+    label: `${existing ? "Materiaalprofiel gewijzigd" : "Materiaalprofiel toegevoegd"}: ${material}`,
+    user,
+    rowId: "",
+    before: existing?.profile || null,
+    after: profile,
+    restorable: false,
+  });
+
+  return json({
+    success: true,
+    action: "save-material-profile",
+    material,
+    profile,
+  });
+}
+
+async function saveCustomCategory(body, user) {
+  if (user.role !== "admin") {
+    return json(
+      { success: false, error: "Alleen een Beheerder kan materiaalcategorieën beheren." },
+      403
+    );
+  }
+
+  const category = cleanCustomCategory(body.category || {});
+  if (!category) {
+    return json({ success: false, error: "Ongeldige materiaalcategorie." }, 400);
+  }
+
+  // Uniqueness is based on translated labels, not on the random category ID.
+  // If any NL/EN/FR/DE translation is already present, reuse that category.
+  const categories = await loadCustomCategories();
+  const duplicate = findExistingCategoryByTranslations(category, categories, category.id);
+
+  if (duplicate) {
+    if (categories[category.id]) {
+      return json({
+        success: false,
+        error: "Deze vertaling hoort al bij een andere categorie. Gebruik Samenvoegen.",
+      }, 409);
+    }
+    return json({
+      success: true,
+      action: "save-custom-category",
+      category: duplicate,
+      duplicate: true,
+      mergedInto: duplicate.id,
+    });
+  }
+
+  const key = categoryBlobKey(category.id);
+  const existing = await getBlobResilient(key, "json").catch(() => null);
+
+  await primaryStore().setJSON(key, {
+    category,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  });
+
+  await addHistoryEntry({
+    type: existing ? "material_category_edit" : "material_category_add",
+    label: `${existing ? "Materiaalcategorie gewijzigd" : "Materiaalcategorie toegevoegd"}: ${category.translations.nl}`,
+    user,
+    rowId: "",
+    before: existing?.category || null,
+    after: category,
+    restorable: false,
+  });
+
+  return json({
+    success: true,
+    action: "save-custom-category",
+    category,
+    duplicate: false,
+  });
+}
+
+
+function mergeProfileTranslations(source = {}, target = {}, targetNames = null) {
+  const result = {};
+  for (const lang of PROFILE_LANGS) {
+    const s = source?.[lang] || {};
+    const t = target?.[lang] || {};
+    result[lang] = {
+      name: shortText(targetNames?.[lang] || t.name || s.name, 180),
+      description: shortText(t.description || s.description, 3000),
+      safetyText: shortText(t.safetyText || s.safetyText, 4000),
+      notes: shortText(t.notes || s.notes, 4000),
+    };
+  }
+  return result;
+}
+
+function mergeMaterialProfiles(source = {}, target = {}, targetNames = null) {
+  const s = cleanMaterialProfile(source || {});
+  const t = cleanMaterialProfile(target || {});
+  const merged = { ...s, ...t };
+  for (const key of ["categoryKey","category","manufacturer","supplier","internalCode","datasheetUrl","materialColor","transparency","suitability","defaultAirAssist","safetyLevel","visualMode","image","ralCode","ralHex","transparentTint","transparentOpacity"]) {
+    merged[key] = t[key] || s[key] || "";
+  }
+  merged.suitability = t.suitability || s.suitability || "";
+  merged.translations = mergeProfileTranslations(s.translations, t.translations, targetNames);
+  return cleanMaterialProfile(merged);
+}
+
+async function renameOrMergeMaterial(body, user) {
+  if (user.role !== "admin") return json({ success:false,error:"Alleen een Beheerder kan materialen hernoemen of samenvoegen." },403);
+  const source = shortText(body.source, 180);
+  const target = shortText(body.target, 180);
+  const mode = body.mode === "merge" ? "merge" : "rename";
+  if (!source || !target) return json({ success:false,error:"Bron- en doelmateriaal zijn verplicht." },400);
+  if (source === target) return json({ success:false,error:"Bron- en doelmateriaal zijn gelijk." },400);
+
+  const renames = await loadMaterialRenames();
+  const resolvedSource = resolveMaterialRename(source, renames);
+  const resolvedTarget = resolveMaterialRename(target, renames);
+  if (resolvedSource === resolvedTarget) return json({ success:false,error:"Deze materialen zijn al samengevoegd." },400);
+
+  // Prevent rename cycles.
+  if (resolveMaterialRename(resolvedTarget, { ...renames, [resolvedSource]: resolvedTarget }) === resolvedSource) {
+    return json({ success:false,error:"Deze hernoeming zou een kringverwijzing veroorzaken." },400);
+  }
+
+  const profiles = await loadMaterialProfiles();
+  const sourceProfile = profiles[resolvedSource] || {};
+  const targetProfile = profiles[resolvedTarget] || {};
+  const targetNames = body.targetTranslations && typeof body.targetTranslations === "object" ? body.targetTranslations : null;
+  const mergedProfile = mergeMaterialProfiles(sourceProfile, targetProfile, mode === "rename" ? targetNames : null);
+
+  await primaryStore().setJSON(profileBlobKey(resolvedTarget), {
+    material: resolvedTarget,
+    profile: mergedProfile,
+    updatedAt: new Date().toISOString(),
+    updatedById: user.id,
+    updatedByName: user.name,
+  });
+  if (resolvedSource !== resolvedTarget) await primaryStore().delete(profileBlobKey(resolvedSource));
+
+  // Rewrite central custom/override rows so newly stored data is canonical too.
+  const upsertListing = await listBlobsResilient("upserts/", "list upserts for material rename");
+  let rewritten = 0;
+  for (const entry of upsertListing.blobs) {
+    const row = await getBlobResilient(entry.key, "json");
+    if (!row) continue;
+    const canonical = resolveMaterialRename(row.materiaal, renames);
+    if (canonical !== resolvedSource) continue;
+    await primaryStore().setJSON(entry.key, { ...row, materiaal: resolvedTarget, updatedAt:new Date().toISOString(), updatedById:user.id, updatedByName:user.name, updatedByEmail:user.email });
+    rewritten += 1;
+  }
+
+  // Flatten existing aliases that pointed at the source and add the source mapping.
+  const nextRenames = { ...renames, [resolvedSource]: resolvedTarget };
+  for (const key of Object.keys(nextRenames)) {
+    const resolved = resolveMaterialRename(nextRenames[key], nextRenames);
+    if (resolved && resolved !== key) nextRenames[key] = resolved;
+  }
+  const savedRenames = await saveMaterialRenames(nextRenames, user);
+
+  await addHistoryEntry({
+    type: mode === "merge" ? "material_merge" : "material_rename",
+    label: `${mode === "merge" ? "Materialen samengevoegd" : "Materiaal hernoemd"}: ${resolvedSource} → ${resolvedTarget}`,
+    user,rowId:"",before:{source:resolvedSource},after:{target:resolvedTarget,rewritten},restorable:false,
+  });
+
+  return json({ success:true,action:"rename-material",mode,source:resolvedSource,target:resolvedTarget,rewritten,materialRenames:savedRenames,profile:mergedProfile });
+}
+
+async function mergeCustomCategory(body, user) {
+  if (user.role !== "admin") return json({success:false,error:"Alleen een Beheerder kan categorieën samenvoegen."},403);
+  const source=shortText(body.source,180),target=shortText(body.target,180);
+  if (!source || !target || source===target) return json({success:false,error:"Ongeldige bron- of doelcategorie."},400);
+  if (source.startsWith("builtin:")) return json({success:false,error:"Een ingebouwde categorie kan niet worden verwijderd."},400);
+  const categories=await loadCustomCategories();
+  if (!categories[source]) return json({success:false,error:"Broncategorie niet gevonden."},404);
+  if (!target.startsWith("builtin:") && !categories[target]) return json({success:false,error:"Doelcategorie niet gevonden."},404);
+  const profiles=await loadMaterialProfiles(); let changed=0;
+  for (const [material,profile] of Object.entries(profiles)) {
+    if (profile.categoryKey!==source) continue;
+    const updated=cleanMaterialProfile({...profile,categoryKey:target,category:""});
+    await primaryStore().setJSON(profileBlobKey(material),{material,profile:updated,updatedAt:new Date().toISOString(),updatedById:user.id,updatedByName:user.name}); changed += 1;
+  }
+  await primaryStore().delete(categoryBlobKey(source));
+  await addHistoryEntry({type:"material_category_merge",label:`Materiaalcategorie samengevoegd: ${categories[source].translations.nl} → ${target}`,user,rowId:"",before:source,after:target,restorable:false});
+  return json({success:true,action:"merge-custom-category",source,target,changed});
+}
+
+async function deleteCustomCategory(body,user){
+  if(user.role!=="admin")return json({success:false,error:"Alleen een Beheerder kan categorieën verwijderen."},403);
+  const id=shortText(body.id,180); if(!id||id.startsWith("builtin:"))return json({success:false,error:"Ongeldige of beschermde categorie."},400);
+  const categories=await loadCustomCategories(); if(!categories[id])return json({success:false,error:"Categorie niet gevonden."},404);
+  const profiles=await loadMaterialProfiles(); if(Object.values(profiles).some(p=>p.categoryKey===id))return json({success:false,error:"Deze categorie is nog in gebruik."},409);
+  await primaryStore().delete(categoryBlobKey(id));
+  await addHistoryEntry({type:"material_category_delete",label:`Materiaalcategorie verwijderd: ${categories[id].translations.nl}`,user,rowId:"",before:categories[id],after:null,restorable:false});
+  return json({success:true,action:"delete-custom-category",id});
+}
+
+async function addLaserProfile(body,user){
+  if(user.role!=="admin")return json({success:false,error:"Alleen een Beheerder kan laserprofielen beheren."},403);
+  const watt=Math.round(Number(body.watt)*10)/10; if(!Number.isFinite(watt)||watt<1||watt>200)return json({success:false,error:"Laservermogen moet tussen 1 en 200 W liggen."},400);
+  const profiles=await loadLaserProfiles(); if(profiles.includes(watt))return json({success:true,action:"add-laser-profile",laserProfiles:profiles,existing:true});
+  const next=await saveLaserProfiles([...profiles,watt],user);
+  await addHistoryEntry({type:"laser_profile_add",label:`Laserprofiel toegevoegd: ${watt} W`,user,rowId:"",before:null,after:watt,restorable:false});
+  return json({success:true,action:"add-laser-profile",laserProfiles:next});
+}
+
+async function removeLaserProfile(body,user){
+  if(user.role!=="admin")return json({success:false,error:"Alleen een Beheerder kan laserprofielen beheren."},403);
+  const watt=Math.round(Number(body.watt)*10)/10; if(BUILTIN_LASER_PROFILES.includes(watt))return json({success:false,error:"Een ingebouwd laserprofiel kan niet worden verwijderd."},400);
+  const patch=await loadCentralPatch(user); if(patch.rawUpserts.some(r=>Number(r.laserWatt)===watt))return json({success:false,error:"Dit laserprofiel wordt nog gebruikt door instellingen."},409);
+  const profiles=await loadLaserProfiles(); const next=await saveLaserProfiles(profiles.filter(v=>Number(v)!==watt),user);
+  await addHistoryEntry({type:"laser_profile_delete",label:`Laserprofiel verwijderd: ${watt} W`,user,rowId:"",before:watt,after:null,restorable:false});
+  return json({success:true,action:"remove-laser-profile",laserProfiles:next});
+}
+
 function buildUserStats(users, rawRows, deletedIds, history) {
   const deleted = new Set(deletedIds || []);
   const stats = new Map();
@@ -511,6 +1187,10 @@ async function addSetting(request, user) {
     updatedByName: "",
     updatedByEmail: "",
     updatedAt: "",
+    testedById: setting.tested ? user.id : "",
+    testedByName: setting.tested ? user.name : "",
+    testedByEmail: setting.tested ? user.email : "",
+    testedAt: setting.tested ? (setting.testedAt || now) : "",
     approvalStatus,
     approvedById: user.role === "admin" ? user.id : "",
     approvedByName: user.role === "admin" ? user.name : "",
@@ -542,10 +1222,6 @@ async function addSetting(request, user) {
 }
 
 async function updateSetting(request, user) {
-  if (user.role !== "admin") {
-    return json({ success: false, error: "Alleen een Beheerder mag instellingen wijzigen." }, 403);
-  }
-
   const body = await request.json().catch(() => ({}));
   const id = body.id;
   if (!validId(id)) return json({ success: false, error: "Ongeldig instelling-ID." }, 400);
@@ -554,18 +1230,44 @@ async function updateSetting(request, user) {
   const error = validateSetting(setting);
   if (error) return json({ success: false, error }, 400);
 
+  // Eigenaarschap wordt uitsluitend tegen de centrale Blob gecontroleerd.
+  // Gegevens uit body.before komen uit de browser en zijn geen bewijs van eigenaarschap.
   const existingStored = await primaryStore().get(`upserts/${id}`, {
     type: "json",
     consistency: "strong",
   });
+  const existing = storedRow(existingStored);
+
+  if (user.role !== "admin") {
+    if (!existing || !existing.createdById || existing.createdById !== user.id) {
+      return json(
+        { success: false, error: "Je mag alleen instellingen wijzigen die je zelf hebt toegevoegd." },
+        403
+      );
+    }
+  }
 
   const suppliedBefore = body.before && typeof body.before === "object"
     ? { id, ...cleanSetting(body.before) }
     : null;
 
-  const existing = storedRow(existingStored);
   const before = existing || suppliedBefore || { id };
   const now = new Date().toISOString();
+
+  const existingTester = testerMetadata(existing || body.before || {});
+  const wasTested = Boolean(existing?.tested ?? body.before?.tested);
+  const tester =
+    setting.tested
+      ? (
+          wasTested && (existingTester.testedById || existingTester.testedByEmail)
+            ? existingTester
+            : {
+                testedById: user.id,
+                testedByName: user.name,
+                testedByEmail: user.email,
+              }
+        )
+      : { testedById: "", testedByName: "", testedByEmail: "" };
 
   const row = {
     id,
@@ -579,6 +1281,10 @@ async function updateSetting(request, user) {
     updatedByName: user.name,
     updatedByEmail: user.email,
     updatedAt: now,
+    testedById: tester.testedById,
+    testedByName: tester.testedByName,
+    testedByEmail: tester.testedByEmail,
+    testedAt: setting.tested ? (wasTested ? (existing?.testedAt || setting.testedAt || now) : now) : "",
     approvalStatus: existing?.approvalStatus || "approved",
     approvedById: existing?.approvedById || "",
     approvedByName: existing?.approvedByName || "",
@@ -595,10 +1301,15 @@ async function updateSetting(request, user) {
     rowId: id,
     before,
     after: row,
-    restorable: true,
+    restorable: user.role === "admin",
   });
 
-  return json({ success: true, action: "update", row });
+  return json({
+    success: true,
+    action: "update",
+    row: rowForUser(row, user),
+    ownerEdit: user.role !== "admin",
+  });
 }
 
 async function deleteSettings(request, user) {
@@ -815,6 +1526,245 @@ async function restoreHistory(historyId, user) {
   return json({ success: true, action: "restore-history" });
 }
 
+
+function cleanImportedStoredRow(input = {}) {
+  const id = shortText(input.id, 180);
+  if (!validId(id)) return null;
+
+  const setting = cleanSetting(input);
+  const error = validateSetting(setting);
+  if (error) return null;
+
+  return storedRow({
+    id,
+    ...setting,
+    createdById: shortText(input.createdById, 180),
+    createdByName: shortText(input.createdByName, 220),
+    createdByEmail: shortText(input.createdByEmail, 320),
+    createdByRole: shortText(input.createdByRole, 30),
+    createdAt: shortText(input.createdAt, 60),
+    updatedById: shortText(input.updatedById, 180),
+    updatedByName: shortText(input.updatedByName, 220),
+    updatedByEmail: shortText(input.updatedByEmail, 320),
+    updatedAt: shortText(input.updatedAt, 60),
+    testedById: shortText(input.testedById, 180),
+    testedByName: shortText(input.testedByName, 220),
+    testedByEmail: shortText(input.testedByEmail, 320),
+    approvalStatus: ["approved", "pending"].includes(String(input.approvalStatus || ""))
+      ? String(input.approvalStatus)
+      : "approved",
+    approvedById: shortText(input.approvedById, 180),
+    approvedByName: shortText(input.approvedByName, 220),
+    approvedAt: shortText(input.approvedAt, 60),
+  });
+}
+
+function cleanImportedHistoryEntry(input = {}, fallbackIndex = 0) {
+  const originalId = shortText(input.id, 180);
+  const id = validId(originalId)
+    ? originalId
+    : `h-migrated-${Date.now()}-${fallbackIndex}`;
+
+  const rawAt = shortText(input.at, 60);
+  const parsedAt = Date.parse(rawAt);
+  const at = Number.isFinite(parsedAt)
+    ? new Date(parsedAt).toISOString()
+    : new Date().toISOString();
+
+  const rowId = shortText(input.rowId, 180);
+
+  return {
+    id,
+    type: shortText(input.type, 80) || "migration",
+    label: shortText(input.label, 500) || "Gemigreerde geschiedenis",
+    user: shortText(input.user, 220) || "Migratie",
+    userId: shortText(input.userId, 180),
+    userRole: shortText(input.userRole, 30),
+    at,
+    rowId: validId(rowId) ? rowId : "",
+    before:
+      input.before && typeof input.before === "object"
+        ? input.before
+        : null,
+    after:
+      input.after && typeof input.after === "object"
+        ? input.after
+        : null,
+    restorable: Boolean(input.restorable),
+  };
+}
+
+async function importCentralBackup(body, user) {
+  if (user.role !== "admin") {
+    return json(
+      { success: false, error: "Alleen een Beheerder kan een centrale migratie uitvoeren." },
+      403
+    );
+  }
+
+  if (body.confirmation !== "MIGREER") {
+    return json(
+      { success: false, error: "Typ MIGREER om de centrale database te importeren." },
+      400
+    );
+  }
+
+  const backup = body.backup;
+  if (
+    !backup ||
+    typeof backup !== "object" ||
+    backup.backupType !== "central-database" ||
+    !backup.central ||
+    typeof backup.central !== "object"
+  ) {
+    return json(
+      { success: false, error: "Dit is geen geldige centrale Laser Settings-back-up." },
+      400
+    );
+  }
+
+  const source = backup.central;
+  const rawUpserts = Array.isArray(source.patch?.upserts) ? source.patch.upserts : [];
+  const rawDeleted = Array.isArray(source.patch?.deleted) ? source.patch.deleted : [];
+  const rawProfiles =
+    source.materialProfiles && typeof source.materialProfiles === "object"
+      ? source.materialProfiles
+      : {};
+  const rawCategories =
+    source.customCategories && typeof source.customCategories === "object"
+      ? source.customCategories
+      : {};
+  const rawHistory = Array.isArray(source.history) ? source.history : [];
+  const rawRenames =
+    source.materialRenames && typeof source.materialRenames === "object"
+      ? source.materialRenames
+      : {};
+  const rawLaserProfiles = Array.isArray(source.laserProfiles)
+    ? source.laserProfiles
+    : BUILTIN_LASER_PROFILES;
+
+  // Defensieve bovengrenzen voor een handmatige migratie.
+  if (
+    rawUpserts.length > 10000 ||
+    rawDeleted.length > 10000 ||
+    Object.keys(rawProfiles).length > 1500 ||
+    Object.keys(rawCategories).length > 1500 ||
+    rawHistory.length > 1000
+  ) {
+    return json(
+      { success: false, error: "De back-up bevat onverwacht veel gegevens en is uit veiligheid geweigerd." },
+      413
+    );
+  }
+
+  const upserts = rawUpserts
+    .map((row) => cleanImportedStoredRow(row))
+    .filter(Boolean);
+
+  const deleted = [...new Set(
+    rawDeleted
+      .map((id) => shortText(id, 180))
+      .filter((id) => validId(id))
+  )];
+
+  const profiles = {};
+  for (const [materialRaw, profileRaw] of Object.entries(rawProfiles)) {
+    const material = shortText(materialRaw, 180);
+    if (!material) continue;
+    profiles[material] = cleanMaterialProfile(profileRaw || {});
+  }
+
+  const categories = {};
+  for (const categoryRaw of Object.values(rawCategories)) {
+    const category = cleanCustomCategory(categoryRaw || {});
+    if (!category) continue;
+    categories[category.id] = category;
+  }
+
+  const renames = cleanMaterialRenames(rawRenames);
+  const laserProfiles = cleanLaserProfiles(rawLaserProfiles);
+  const history = rawHistory.map(cleanImportedHistoryEntry);
+
+  // Schrijfacties zijn idempotent: opnieuw uitvoeren overschrijft dezelfde
+  // sleutels in plaats van duplicaten te maken.
+  for (const row of upserts) {
+    await primaryStore().setJSON(`upserts/${row.id}`, row);
+  }
+
+  for (const id of deleted) {
+    await primaryStore().setJSON(`deleted/${id}`, {
+      id,
+      deletedAt: new Date().toISOString(),
+      deletedById: user.id,
+      deletedByName: user.name,
+      reason: "database_migration",
+    });
+  }
+
+  for (const [material, profile] of Object.entries(profiles)) {
+    await primaryStore().setJSON(profileBlobKey(material), {
+      material,
+      profile,
+      updatedAt: new Date().toISOString(),
+      updatedById: user.id,
+      updatedByName: user.name,
+      migrated: true,
+    });
+  }
+
+  for (const category of Object.values(categories)) {
+    await primaryStore().setJSON(categoryBlobKey(category.id), {
+      category,
+      updatedAt: new Date().toISOString(),
+      updatedById: user.id,
+      updatedByName: user.name,
+      migrated: true,
+    });
+  }
+
+  await saveMaterialRenames(renames, user);
+  await saveLaserProfiles(laserProfiles, user);
+
+  for (let i = 0; i < history.length; i += 1) {
+    const entry = history[i];
+    const stamp = String(Date.parse(entry.at) || Date.now()).padStart(13, "0");
+    await primaryStore().setJSON(`history/${stamp}-${entry.id}`, entry);
+  }
+
+  await addHistoryEntry({
+    type: "database_migration",
+    label: `Centrale database gemigreerd: ${upserts.length} wijzigingen, ${profiles ? Object.keys(profiles).length : 0} materiaalprofielen`,
+    user,
+    rowId: "",
+    before: null,
+    after: {
+      sourceVersion: shortText(backup.version, 40),
+      sourceApiVersion: backup.apiVersion ?? null,
+      sourceExportedAt: shortText(backup.exportedAt, 60),
+      upserts: upserts.length,
+      deleted: deleted.length,
+      materialProfiles: Object.keys(profiles).length,
+      customCategories: Object.keys(categories).length,
+      history: history.length,
+      laserProfiles: laserProfiles.length,
+    },
+    restorable: false,
+  });
+
+  return json({
+    success: true,
+    action: "import-central-backup",
+    imported: {
+      upserts: upserts.length,
+      deleted: deleted.length,
+      materialProfiles: Object.keys(profiles).length,
+      customCategories: Object.keys(categories).length,
+      history: history.length,
+      laserProfiles: laserProfiles.length,
+    },
+  });
+}
+
 async function handlePatch(request, user) {
   const body = await request.json().catch(() => ({}));
   switch (body.action) {
@@ -828,6 +1778,24 @@ async function handlePatch(request, user) {
       return deleteUser(body.userId, body.confirmation, user);
     case "restore-history":
       return restoreHistory(body.historyId, user);
+    case "save-material-profile":
+      return saveMaterialProfile(body, user);
+    case "save-custom-category":
+      return saveCustomCategory(body, user);
+    case "deduplicate-custom-categories":
+      return deduplicateCustomCategories(user);
+    case "rename-material":
+      return renameOrMergeMaterial(body, user);
+    case "merge-custom-category":
+      return mergeCustomCategory(body, user);
+    case "delete-custom-category":
+      return deleteCustomCategory(body, user);
+    case "add-laser-profile":
+      return addLaserProfile(body, user);
+    case "remove-laser-profile":
+      return removeLaserProfile(body, user);
+    case "import-central-backup":
+      return importCentralBackup(body, user);
     default:
       return json({ success: false, error: "Onbekende beheeractie." }, 400);
   }
@@ -851,14 +1819,25 @@ export default async (request) => {
     const url = new URL(request.url);
 
     if (request.method === "GET") {
-      const patch = await loadCentralPatch(user);
-      const recentHistory = (await historyEntries(5)).map(historySummary);
+      const [patch, recentHistoryRaw, materialProfiles, customCategories, materialRenames, laserProfiles] = await Promise.all([
+        loadCentralPatch(user),
+        historyEntries(5),
+        loadMaterialProfiles(),
+        loadCustomCategories(),
+        loadMaterialRenames(),
+        loadLaserProfiles(),
+      ]);
+      const recentHistory = recentHistoryRaw.map(historySummary);
 
       const result = {
         success: true,
-        version: 9,
+        version: 17,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
+        materialProfiles,
+        customCategories,
+        materialRenames,
+        laserProfiles,
         pendingCount: patch.pendingCount,
         recentHistory,
       };
