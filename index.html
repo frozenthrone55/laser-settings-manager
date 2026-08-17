@@ -735,7 +735,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='3.2.1-dev';
+const APP_VERSION='3.2.2-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -2139,10 +2139,51 @@ function centralMaterialDataSignature(profiles,categories,renames={},laserProfil
   return JSON.stringify({profiles:orderedProfiles,categories:orderedCategories,renames:orderedRenames,laserProfiles:[...(laserProfiles||[])].map(Number).sort((a,b)=>a-b)});
 }
 function renderAdminPendingBadge(){const badge=$('adminPendingBadge');if(!badge)return;const n=Number(centralPendingCount)||0;badge.textContent=String(n);badge.classList.toggle('hidden',!can('admin')||n<=0)}
+
+const APPROVAL_NOTICE_STORAGE='lsm_approval_notice_seen_v1';
+
+function approvalNoticeStorageKey(){
+  return `${APPROVAL_NOTICE_STORAGE}:${txt(currentUser?.id)||'anonymous'}`;
+}
+
+function readSeenApprovalNotices(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(approvalNoticeStorageKey())||'{}');
+    return raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
+  }catch(e){
+    return {};
+  }
+}
+
+function claimApprovalNotice(type,id){
+  if(!id||!currentUser?.id)return false;
+
+  const key=`${type}:${id}`;
+  const seen=readSeenApprovalNotices();
+  if(seen[key])return false;
+
+  seen[key]=Date.now();
+
+  // Houd de lokale opslag klein. Alleen de 250 meest recente beslissingen bewaren.
+  const compact=Object.entries(seen)
+    .sort((a,b)=>Number(b[1]||0)-Number(a[1]||0))
+    .slice(0,250);
+
+  try{
+    localStorage.setItem(
+      approvalNoticeStorageKey(),
+      JSON.stringify(Object.fromEntries(compact))
+    );
+  }catch(e){}
+
+  return true;
+}
+
 function notifyCentralChanges(oldPatch,nextPatch,newPendingCount){
   const oldMap=new Map((oldPatch?.upserts||[]).map(r=>[r.id,r]));
   const nextMap=new Map((nextPatch?.upserts||[]).map(r=>[r.id,r]));
   const deleted=new Set(nextPatch?.deleted||[]);
+
   if(currentUser?.role==='admin'){
     if(pendingBaseline!==null&&newPendingCount>pendingBaseline){
       const diff=newPendingCount-pendingBaseline;
@@ -2156,12 +2197,29 @@ function notifyCentralChanges(oldPatch,nextPatch,newPendingCount){
       toast(msg,'good');
     }
     pendingBaseline=newPendingCount;
-  }else{
-    for(const [id,oldRow] of oldMap){
-      if(oldRow.createdById!==currentUser?.id||oldRow.approvalStatus!=='pending')continue;
-      const nextRow=nextMap.get(id);
-      if(nextRow&&nextRow.approvalStatus==='approved')toast(`${tr('Je instelling')} ${localizedRowLabel(nextRow)} ${tr('is goedgekeurd')}`,'good');
-      else if(deleted.has(id))toast(`${tr('Je instelling')} ${localizedRowLabel(oldRow)} ${tr('is afgewezen')}`,'bad');
+    return;
+  }
+
+  for(const [id,oldRow] of oldMap){
+    if(oldRow.createdById!==currentUser?.id||oldRow.approvalStatus!=='pending')continue;
+
+    const nextRow=nextMap.get(id);
+
+    if(nextRow&&nextRow.approvalStatus==='approved'){
+      if(claimApprovalNotice('approved',id)){
+        toast(
+          `${tr('Je instelling')} ${localizedRowLabel(nextRow)} ${tr('is goedgekeurd')}`,
+          'good'
+        );
+      }
+      continue;
+    }
+
+    if(deleted.has(id)&&claimApprovalNotice('rejected',id)){
+      toast(
+        `${tr('Je instelling')} ${localizedRowLabel(oldRow)} ${tr('is afgewezen')}`,
+        'bad'
+      );
     }
   }
 }
