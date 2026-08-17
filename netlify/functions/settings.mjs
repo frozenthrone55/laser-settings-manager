@@ -23,11 +23,6 @@ function fallbackStore() {
 }
 
 const AUTHORIZED_PARTIES = [
-  // Oude omgeving tijdelijk behouden tijdens de gecontroleerde verhuis.
-  "https://laser-settings-manager.netlify.app",
-  "https://development--laser-settings-manager.netlify.app",
-
-  // Nieuwe v3-omgeving.
   "https://laser-settings-manager-v3.netlify.app",
   "https://development--laser-settings-manager-v3.netlify.app",
 ];
@@ -1741,7 +1736,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 14,
+        version: 15,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         materialProfiles,

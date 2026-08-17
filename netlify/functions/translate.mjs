@@ -6,11 +6,6 @@ const clerk = createClerkClient({
 });
 
 const AUTHORIZED_PARTIES = [
-  // Oude omgeving tijdelijk behouden tijdens de gecontroleerde verhuis.
-  "https://laser-settings-manager.netlify.app",
-  "https://development--laser-settings-manager.netlify.app",
-
-  // Nieuwe v3-omgeving.
   "https://laser-settings-manager-v3.netlify.app",
   "https://development--laser-settings-manager-v3.netlify.app",
 ];
