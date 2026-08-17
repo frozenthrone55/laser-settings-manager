@@ -362,7 +362,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 .filterSectionWattage .filterSectionGrid{grid-template-columns:minmax(180px,280px)}
 .filterSectionMaterial .filterSectionGrid{grid-template-columns:minmax(250px,1.7fr) repeat(5,minmax(120px,1fr))}
 .filterSectionMaterial .searchFieldWrap{min-width:0}
-.filterSectionMachine .filterSectionGrid{grid-template-columns:repeat(2,minmax(220px,1fr))}
+.filterSectionLaserData .filterSectionGrid{grid-template-columns:repeat(2,minmax(220px,1fr))}
 .filterFooterActions{display:flex;justify-content:flex-end;gap:8px;padding-top:2px}
 .machineCell{white-space:nowrap}
 .machineCell .machineEmpty{color:#9aa5b5}
@@ -373,7 +373,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 @media(max-width:760px){
   .filterSectionWattage .filterSectionGrid,
   .filterSectionMaterial .filterSectionGrid,
-  .filterSectionMachine .filterSectionGrid{grid-template-columns:1fr}
+  .filterSectionLaserData .filterSectionGrid{grid-template-columns:1fr}
   .filterSectionMaterial .searchFieldWrap{grid-column:auto}
   .filterFooterActions{flex-direction:column}
   .filterFooterActions .btn{width:100%}
@@ -434,8 +434,8 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 }
 
 /* v3.1.0 — apart kader voor laserselectie */
-.filterSectionLaser .filterSectionGrid{
-  grid-template-columns:minmax(260px,520px);
+.filterSectionLaserData .filterSectionGrid{
+  grid-template-columns:minmax(260px,1.1fr) repeat(2,minmax(220px,1fr));
 }
 .filterLaserHint{
   margin-top:6px;
@@ -444,7 +444,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
   line-height:1.45;
 }
 @media(max-width:760px){
-  .filterSectionLaser .filterSectionGrid{grid-template-columns:1fr}
+  .filterSectionLaserData .filterSectionGrid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -508,19 +508,6 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
       </div>
     </section>
 
-    <section class="filterSection filterSectionLaser">
-      <div class="filterSectionTitle">Laser</div>
-      <div class="filterSectionGrid">
-        <div class="field">
-          <label>Laser selecteren</label>
-          <select id="filterMachineSelect">
-            <option value="">Alle lasers</option>
-          </select>
-          <div class="filterLaserHint">Kies een bestaande combinatie van merk en type/model. Merk en type worden automatisch als filter ingevuld.</div>
-        </div>
-      </div>
-    </section>
-
     <section class="filterSection filterSectionMaterial">
       <div class="filterSectionTitle">Materiaal</div>
       <div class="filterSectionGrid">
@@ -537,14 +524,24 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
       </div>
     </section>
 
-    <section class="filterSection filterSectionMachine">
-      <div class="filterSectionTitle">Graveertoestel</div>
+    
+    <section class="filterSection filterSectionLaserData">
+      <div class="filterSectionTitle">Lasergegevens</div>
       <div class="filterSectionGrid">
+        <div class="field">
+          <label>Laser selecteren</label>
+          <select id="filterMachineSelect">
+            <option value="">Alle lasers</option>
+          </select>
+          <div class="filterLaserHint">Kies een bestaande combinatie van merk en type/model. Merk en type worden automatisch als filter ingevuld.</div>
+        </div>
+
         <div class="field">
           <label>Merk graveertoestel</label>
           <input id="filterMachineBrand" list="filterMachineBrandDatalist" autocomplete="off" placeholder="Typ of kies een merk…">
           <datalist id="filterMachineBrandDatalist"></datalist>
         </div>
+
         <div class="field">
           <label>Type / model graveertoestel</label>
           <input id="filterMachineModel" list="filterMachineModelDatalist" autocomplete="off" placeholder="Typ of kies een type/model…">
@@ -753,7 +750,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='3.1.0-dev';
+const APP_VERSION='3.1.1-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -979,6 +976,14 @@ const I18N_LASER_SELECT_SUPPLEMENT={
   }
 };
 for(const lang of ['en','fr','de'])Object.assign(I18N_TRANSLATIONS[lang],I18N_LASER_SELECT_SUPPLEMENT[lang]);
+
+const I18N_LASER_DATA_SUPPLEMENT={
+  en:{"Lasergegevens":"Laser details"},
+  fr:{"Lasergegevens":"Données du laser"},
+  de:{"Lasergegevens":"Laserdaten"}
+};
+for(const lang of ['en','fr','de'])Object.assign(I18N_TRANSLATIONS[lang],I18N_LASER_DATA_SUPPLEMENT[lang]);
+
 
 
 
