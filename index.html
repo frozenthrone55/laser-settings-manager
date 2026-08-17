@@ -433,15 +433,9 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
   line-height:1;
 }
 
-/* v3.1.0 — apart kader voor laserselectie */
+/* v3.1.2 — lasergegevens bovenaan */
 .filterSectionLaserData .filterSectionGrid{
-  grid-template-columns:minmax(260px,1.1fr) repeat(2,minmax(220px,1fr));
-}
-.filterLaserHint{
-  margin-top:6px;
-  font-size:12px;
-  color:var(--muted);
-  line-height:1.45;
+  grid-template-columns:minmax(180px,0.75fr) repeat(2,minmax(220px,1fr));
 }
 @media(max-width:760px){
   .filterSectionLaserData .filterSectionGrid{grid-template-columns:1fr}
@@ -498,13 +492,29 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 <section class="view" id="view-settings"><div class="viewHead"><div><h1>Instellingen</h1><p>Zoek, vergelijk, test en beheer alle snij- en graveerwaarden.</p></div><div class="toolbar"><button class="btn primary editorAction" id="newRowBtn">+ Nieuwe instelling</button><button class="btn secondary" id="exportCsvBtn">CSV</button><button class="btn secondary adminAction" id="backupBtn">Back-up</button><button class="btn secondary adminAction" id="importBtn">Importeren</button><input type="file" id="importFile" accept="application/json" class="hidden"></div></div>
 <div class="filterCard">
   <div class="filterSections">
-    <section class="filterSection filterSectionWattage">
-      <div class="filterSectionTitle">Wattage</div>
+    <section class="filterSection filterSectionLaserData">
+      <div class="filterSectionTitle">Lasergegevens</div>
       <div class="filterSectionGrid">
+
         <div class="field">
           <label>Laservermogen</label>
-          <select id="filterLaserWatt"><option value="">Alle</option></select>
+          <select id="filterLaserWatt">
+            <option value="">Alle</option>
+          </select>
         </div>
+
+        <div class="field">
+          <label>Merk graveertoestel</label>
+          <input id="filterMachineBrand" list="filterMachineBrandDatalist" autocomplete="off" placeholder="Typ of kies een merk…">
+          <datalist id="filterMachineBrandDatalist"></datalist>
+        </div>
+
+        <div class="field">
+          <label>Type / model graveertoestel</label>
+          <input id="filterMachineModel" list="filterMachineModelDatalist" autocomplete="off" placeholder="Typ of kies een type/model…">
+          <datalist id="filterMachineModelDatalist"></datalist>
+        </div>
+
       </div>
     </section>
 
@@ -525,31 +535,6 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
     </section>
 
     
-    <section class="filterSection filterSectionLaserData">
-      <div class="filterSectionTitle">Lasergegevens</div>
-      <div class="filterSectionGrid">
-        <div class="field">
-          <label>Laser selecteren</label>
-          <select id="filterMachineSelect">
-            <option value="">Alle lasers</option>
-          </select>
-          <div class="filterLaserHint">Kies een bestaande combinatie van merk en type/model. Merk en type worden automatisch als filter ingevuld.</div>
-        </div>
-
-        <div class="field">
-          <label>Merk graveertoestel</label>
-          <input id="filterMachineBrand" list="filterMachineBrandDatalist" autocomplete="off" placeholder="Typ of kies een merk…">
-          <datalist id="filterMachineBrandDatalist"></datalist>
-        </div>
-
-        <div class="field">
-          <label>Type / model graveertoestel</label>
-          <input id="filterMachineModel" list="filterMachineModelDatalist" autocomplete="off" placeholder="Typ of kies een type/model…">
-          <datalist id="filterMachineModelDatalist"></datalist>
-        </div>
-      </div>
-    </section>
-
     <div class="filterFooterActions">
       <button class="btn secondary" id="clearFiltersBtn">Wis</button>
       <button class="btn danger adminAction" id="bulkDeleteBtn" disabled>Bulk verwijderen</button>
@@ -750,7 +735,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='3.1.1-dev';
+const APP_VERSION='3.1.2-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -957,25 +942,6 @@ const I18N_REMAINING_UI_AUDIT={
   }
 };
 for(const lang of ['en','fr','de'])Object.assign(I18N_TRANSLATIONS[lang],I18N_REMAINING_UI_AUDIT[lang]);
-
-const I18N_LASER_SELECT_SUPPLEMENT={
-  en:{
-    "Laser selecteren":"Select laser",
-    "Alle lasers":"All lasers",
-    "Kies een bestaande combinatie van merk en type/model. Merk en type worden automatisch als filter ingevuld.":"Choose an existing brand and type/model combination. Brand and type are filled in automatically as filters."
-  },
-  fr:{
-    "Laser selecteren":"Sélectionner le laser",
-    "Alle lasers":"Tous les lasers",
-    "Kies een bestaande combinatie van merk en type/model. Merk en type worden automatisch als filter ingevuld.":"Choisissez une combinaison existante de marque et de type/modèle. La marque et le type sont automatiquement renseignés comme filtres."
-  },
-  de:{
-    "Laser selecteren":"Laser auswählen",
-    "Alle lasers":"Alle Laser",
-    "Kies een bestaande combinatie van merk en type/model. Merk en type worden automatisch als filter ingevuld.":"Wählen Sie eine vorhandene Kombination aus Marke und Typ/Modell. Marke und Typ werden automatisch als Filter eingetragen."
-  }
-};
-for(const lang of ['en','fr','de'])Object.assign(I18N_TRANSLATIONS[lang],I18N_LASER_SELECT_SUPPLEMENT[lang]);
 
 const I18N_LASER_DATA_SUPPLEMENT={
   en:{"Lasergegevens":"Laser details"},
@@ -1193,7 +1159,6 @@ function setLanguage(lang,{persist=true}={}){
   document.title=tr('Instellingen diodelasers · 10 W · 20 W · 40 W · 70 W');
   if(persist)localStorage.setItem(I18N_STORAGE_KEY,lang);
   refreshSearchLanguageValues();
-  fillMachineSelect();
   translateDom(document.body);
   // Rerender dynamische delen zodat datum- en getalnotatie de gekozen locale volgt.
   if(typeof renderAll==='function'&&typeof rows!=='undefined'&&rows?.length){
@@ -3436,8 +3401,8 @@ function filteredRows(){
   }
   return result;
 }
-function activeFilters(){return $('filterExactMaterial').checked||['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability','filterMachineSelect','filterMachineBrand','filterMachineModel'].some(id=>txt($(id).value).trim()!=='')}
-function fillOptions(){clearSearchCaches();syncMachineFilterSuggestions();fillMachineSelect();const mats=unique('materiaal').sort((a,b)=>translatedMaterialName(a,currentLanguage).localeCompare(translatedMaterialName(b,currentLanguage),currentLocale()));fillMaterialCategoryOptions();fillEditorMaterialSelect($('editMaterialSelect')?.value||'');fillSearchMaterialDatalist();const laserOptions=LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');const currentFilter=$('filterLaserWatt').value,currentEdit=$('editLaserWatt').value,currentTest=$('testLaserWatt').value;$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+laserOptions;$('editLaserWatt').innerHTML=laserOptions;$('testLaserWatt').innerHTML=laserOptions;if(LASER_PROFILES.map(String).includes(currentFilter))$('filterLaserWatt').value=currentFilter;if(LASER_PROFILES.map(String).includes(currentEdit))$('editLaserWatt').value=currentEdit;else $('editLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);if(LASER_PROFILES.map(String).includes(currentTest))$('testLaserWatt').value=currentTest;else $('testLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);$('filterOperation').innerHTML=`<option value="">${esc(tr('Alle'))}</option>`+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(tr(v))}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(translatedMaterialName(v))}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');const sub=document.querySelector('.brandsub');if(sub)sub.textContent=LASER_PROFILES.map(v=>`${v} W`).join(' · ')}
+function activeFilters(){return $('filterExactMaterial').checked||['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability','filterMachineBrand','filterMachineModel'].some(id=>txt($(id).value).trim()!=='')}
+function fillOptions(){clearSearchCaches();syncMachineFilterSuggestions();const mats=unique('materiaal').sort((a,b)=>translatedMaterialName(a,currentLanguage).localeCompare(translatedMaterialName(b,currentLanguage),currentLocale()));fillMaterialCategoryOptions();fillEditorMaterialSelect($('editMaterialSelect')?.value||'');fillSearchMaterialDatalist();const laserOptions=LASER_PROFILES.map(v=>`<option value="${v}">${v} W</option>`).join('');const currentFilter=$('filterLaserWatt').value,currentEdit=$('editLaserWatt').value,currentTest=$('testLaserWatt').value;$('filterLaserWatt').innerHTML='<option value="">Alle</option>'+laserOptions;$('editLaserWatt').innerHTML=laserOptions;$('testLaserWatt').innerHTML=laserOptions;if(LASER_PROFILES.map(String).includes(currentFilter))$('filterLaserWatt').value=currentFilter;if(LASER_PROFILES.map(String).includes(currentEdit))$('editLaserWatt').value=currentEdit;else $('editLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);if(LASER_PROFILES.map(String).includes(currentTest))$('testLaserWatt').value=currentTest;else $('testLaserWatt').value=String(LASER_PROFILES.includes(70)?70:LASER_PROFILES[0]);$('filterOperation').innerHTML=`<option value="">${esc(tr('Alle'))}</option>`+unique('bewerking').map(v=>`<option value="${esc(v)}">${esc(tr(v))}</option>`).join('');$('filterThickness').innerHTML='<option value="">Alle</option>'+unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');$('filterPower').innerHTML='<option value="">Alle</option>'+unique('vermogen').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)}%</option>`).join('');$('testMaterial').innerHTML=mats.map(v=>`<option value="${esc(v)}">${esc(translatedMaterialName(v))}</option>`).join('');$('testThickness').innerHTML=unique('dikte').sort((a,b)=>Number(a)-Number(b)).map(v=>`<option value="${esc(v)}">${esc(v)} mm</option>`).join('');const sub=document.querySelector('.brandsub');if(sub)sub.textContent=LASER_PROFILES.map(v=>`${v} W`).join(' · ')}
 function num(v,unit=''){if(v===''||v===null||v===undefined)return '<span style="color:#9aa5b5">—</span>';return `${Number(v).toLocaleString(currentLocale(),{maximumFractionDigits:1})}${unit}`}
 function renderSettings(){
   const data=filteredRows();
@@ -3873,81 +3838,6 @@ function fillMachineModelDatalist(brand=$('editMachineBrand')?.value||''){
 }
 
 
-function machineCombinationValues(){
-  const map=new Map();
-  for(const r of rows){
-    const brand=txt(r.machineBrand).trim();
-    const model=txt(r.machineModel).trim();
-    if(!brand&&!model)continue;
-
-    const key=`${normalizeSearchText(brand)}\u0001${normalizeSearchText(model)}`;
-    if(map.has(key))continue;
-    map.set(key,{brand,model});
-  }
-
-  return [...map.values()].sort((a,b)=>{
-    const aa=[a.brand,a.model].filter(Boolean).join(' — ');
-    const bb=[b.brand,b.model].filter(Boolean).join(' — ');
-    return aa.localeCompare(bb,currentLocale(),{sensitivity:'base'});
-  });
-}
-
-function machineCombinationKey(brand,model){
-  return `${normalizeSearchText(brand)}\u0001${normalizeSearchText(model)}`;
-}
-
-function fillMachineSelect(){
-  const select=$('filterMachineSelect');
-  if(!select)return;
-
-  const current=select.value;
-  const options=machineCombinationValues();
-
-  select.innerHTML=
-    `<option value="">${esc(tr('Alle lasers'))}</option>`+
-    options.map(item=>{
-      const key=machineCombinationKey(item.brand,item.model);
-      const label=[item.brand,item.model].filter(Boolean).join(' — ');
-      return `<option value="${esc(key)}" data-brand="${esc(item.brand)}" data-model="${esc(item.model)}">${esc(label)}</option>`;
-    }).join('');
-
-  if([...select.options].some(opt=>opt.value===current))select.value=current;
-}
-
-function syncMachineSelectFromFields(){
-  const select=$('filterMachineSelect');
-  const brand=$('filterMachineBrand');
-  const model=$('filterMachineModel');
-  if(!select||!brand||!model)return;
-
-  const key=machineCombinationKey(brand.value,model.value);
-  const match=[...select.options].find(opt=>opt.value===key);
-  select.value=match?key:'';
-}
-
-function applySelectedMachine(){
-  const select=$('filterMachineSelect');
-  const brand=$('filterMachineBrand');
-  const model=$('filterMachineModel');
-  if(!select||!brand||!model)return;
-
-  const option=select.selectedOptions?.[0];
-  if(!option||!select.value){
-    brand.value='';
-    model.value='';
-    syncMachineFilterSuggestions();
-    currentPage=1;
-    renderSettings();
-    return;
-  }
-
-  brand.value=option.dataset.brand||'';
-  model.value=option.dataset.model||'';
-  syncMachineFilterSuggestions({canonicalize:true});
-  currentPage=1;
-  renderSettings();
-}
-
 function allMachineModelValues(){
   const map=new Map();
   for(const r of rows){
@@ -4282,13 +4172,12 @@ $('filterSearch').addEventListener('keydown',e=>{
   }
 });
 ['filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability'].forEach(id=>$(id).addEventListener('change',()=>{currentPage=1;renderSettings()}));$('filterExactMaterial').addEventListener('change',()=>{currentPage=1;renderSettings()});
-$('filterMachineBrand').addEventListener('input',()=>{syncMachineFilterSuggestions();syncMachineSelectFromFields();scheduleFilterSearch()});
-$('filterMachineBrand').addEventListener('change',()=>{syncMachineFilterSuggestions({canonicalize:true,render:true});syncMachineSelectFromFields()});
+$('filterMachineBrand').addEventListener('input',()=>{syncMachineFilterSuggestions();scheduleFilterSearch()});
+$('filterMachineBrand').addEventListener('change',()=>syncMachineFilterSuggestions({canonicalize:true,render:true}));
 $('filterMachineBrand').addEventListener('blur',()=>syncMachineFilterSuggestions({canonicalize:true}));
-$('filterMachineModel').addEventListener('input',()=>{syncMachineSelectFromFields();scheduleFilterSearch()});
-$('filterMachineModel').addEventListener('change',()=>{syncMachineFilterSuggestions({canonicalize:true,render:true});syncMachineSelectFromFields()});
-$('filterMachineModel').addEventListener('blur',()=>syncMachineFilterSuggestions({canonicalize:true}));$('filterMachineSelect').addEventListener('change',applySelectedMachine);
-$('clearFiltersBtn').onclick=()=>{clearTimeout(filterSearchTimer);['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability','filterMachineSelect','filterMachineBrand','filterMachineModel'].forEach(id=>$(id).value='');$('filterExactMaterial').checked=false;syncMachineFilterSuggestions();currentPage=1;renderSettings()};$('pageSize').onchange=()=>{currentPage=1;renderSettings()};$('prevPage').onclick=()=>{currentPage=Math.max(1,currentPage-1);renderSettings()};$('nextPage').onclick=()=>{currentPage++;renderSettings()};
+$('filterMachineModel').addEventListener('input',scheduleFilterSearch);
+$('filterMachineModel').addEventListener('change',()=>syncMachineFilterSuggestions({canonicalize:true,render:true}));
+$('filterMachineModel').addEventListener('blur',()=>syncMachineFilterSuggestions({canonicalize:true}));$('clearFiltersBtn').onclick=()=>{clearTimeout(filterSearchTimer);['filterSearch','filterLaserWatt','filterThickness','filterOperation','filterPower','filterStatus','filterReliability','filterMachineBrand','filterMachineModel'].forEach(id=>$(id).value='');$('filterExactMaterial').checked=false;syncMachineFilterSuggestions();currentPage=1;renderSettings()};$('pageSize').onchange=()=>{currentPage=1;renderSettings()};$('prevPage').onclick=()=>{currentPage=Math.max(1,currentPage-1);renderSettings()};$('nextPage').onclick=()=>{currentPage++;renderSettings()};
 function submitGlobalSearch(){
   const query=$('globalSearch').value.trim();
   showView('settings');
