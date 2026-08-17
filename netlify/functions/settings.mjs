@@ -440,10 +440,66 @@ function nameForClerkUser(user) {
   );
 }
 
+function testerMetadata(row) {
+  if (!row?.tested) {
+    return { testedById: "", testedByName: "", testedByEmail: "" };
+  }
+
+  const explicit = {
+    testedById: shortText(row.testedById, 180),
+    testedByName: shortText(row.testedByName, 220),
+    testedByEmail: shortText(row.testedByEmail, 320),
+  };
+  if (explicit.testedById || explicit.testedByEmail) return explicit;
+
+  const testedAt = Date.parse(shortText(row.testedAt, 60));
+  const updatedAt = Date.parse(shortText(row.updatedAt, 60));
+  const createdAt = Date.parse(shortText(row.createdAt, 60));
+
+  // Oudere instelling die door een wijziging als Getest werd gemarkeerd.
+  if (
+    shortText(row.updatedById, 180) &&
+    Number.isFinite(testedAt) &&
+    Number.isFinite(updatedAt) &&
+    Math.abs(testedAt - updatedAt) <= 5 * 60 * 1000
+  ) {
+    return {
+      testedById: shortText(row.updatedById, 180),
+      testedByName: shortText(row.updatedByName, 220),
+      testedByEmail: shortText(row.updatedByEmail, 320),
+    };
+  }
+
+  // Een direct als Eigen test aangemaakte instelling hoort bij de maker.
+  if (
+    shortText(row.createdById, 180) &&
+    (
+      shortText(row.source, 120) === "Eigen test" ||
+      (
+        Number.isFinite(testedAt) &&
+        Number.isFinite(createdAt) &&
+        Math.abs(testedAt - createdAt) <= 5 * 60 * 1000
+      )
+    )
+  ) {
+    return {
+      testedById: shortText(row.createdById, 180),
+      testedByName: shortText(row.createdByName, 220),
+      testedByEmail: shortText(row.createdByEmail, 320),
+    };
+  }
+
+  return { testedById: "", testedByName: "", testedByEmail: "" };
+}
+
 function storedRow(row) {
   if (!row) return row;
+  const tester = testerMetadata(row);
   return {
     ...row,
+    testedById: tester.testedById,
+    testedByName: tester.testedByName,
+    testedByEmail: tester.testedByEmail,
     approvalStatus: row.approvalStatus || "approved",
     approvedById: row.approvedById || "",
     approvedByName: row.approvedByName || "",
@@ -458,6 +514,7 @@ function rowForUser(row, user) {
   const result = { ...safe };
   delete result.createdByEmail;
   delete result.updatedByEmail;
+  delete result.testedByEmail;
   return result;
 }
 
@@ -1130,6 +1187,10 @@ async function addSetting(request, user) {
     updatedByName: "",
     updatedByEmail: "",
     updatedAt: "",
+    testedById: setting.tested ? user.id : "",
+    testedByName: setting.tested ? user.name : "",
+    testedByEmail: setting.tested ? user.email : "",
+    testedAt: setting.tested ? (setting.testedAt || now) : "",
     approvalStatus,
     approvedById: user.role === "admin" ? user.id : "",
     approvedByName: user.role === "admin" ? user.name : "",
@@ -1186,6 +1247,21 @@ async function updateSetting(request, user) {
   const before = existing || suppliedBefore || { id };
   const now = new Date().toISOString();
 
+  const existingTester = testerMetadata(existing || body.before || {});
+  const wasTested = Boolean(existing?.tested ?? body.before?.tested);
+  const tester =
+    setting.tested
+      ? (
+          wasTested && (existingTester.testedById || existingTester.testedByEmail)
+            ? existingTester
+            : {
+                testedById: user.id,
+                testedByName: user.name,
+                testedByEmail: user.email,
+              }
+        )
+      : { testedById: "", testedByName: "", testedByEmail: "" };
+
   const row = {
     id,
     ...setting,
@@ -1198,6 +1274,10 @@ async function updateSetting(request, user) {
     updatedByName: user.name,
     updatedByEmail: user.email,
     updatedAt: now,
+    testedById: tester.testedById,
+    testedByName: tester.testedByName,
+    testedByEmail: tester.testedByEmail,
+    testedAt: setting.tested ? (wasTested ? (existing?.testedAt || setting.testedAt || now) : now) : "",
     approvalStatus: existing?.approvalStatus || "approved",
     approvedById: existing?.approvedById || "",
     approvedByName: existing?.approvedByName || "",
@@ -1455,6 +1535,9 @@ function cleanImportedStoredRow(input = {}) {
     updatedByName: shortText(input.updatedByName, 220),
     updatedByEmail: shortText(input.updatedByEmail, 320),
     updatedAt: shortText(input.updatedAt, 60),
+    testedById: shortText(input.testedById, 180),
+    testedByName: shortText(input.testedByName, 220),
+    testedByEmail: shortText(input.testedByEmail, 320),
     approvalStatus: ["approved", "pending"].includes(String(input.approvalStatus || ""))
       ? String(input.approvalStatus)
       : "approved",
@@ -1736,7 +1819,7 @@ export default async (request) => {
 
       const result = {
         success: true,
-        version: 15,
+        version: 16,
         user: { id: user.id, name: user.name, role: user.role },
         patch: { upserts: patch.upserts, deleted: patch.deleted },
         materialProfiles,
