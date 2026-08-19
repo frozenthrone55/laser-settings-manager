@@ -505,6 +505,22 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 <section class="view" id="view-settings"><div class="viewHead"><div><h1>Instellingen</h1><p>Zoek, vergelijk, test en beheer alle snij- en graveerwaarden.</p></div><div class="toolbar"><button class="btn primary editorAction" id="newRowBtn">+ Nieuwe instelling</button><button class="btn secondary" id="exportCsvBtn">CSV</button><button class="btn secondary adminAction" id="backupBtn">Back-up</button><button class="btn secondary adminAction" id="importBtn">Importeren</button><input type="file" id="importFile" accept="application/json" class="hidden"></div></div>
 <div class="filterCard">
   <div class="filterSections">
+    <section class="filterSection filterSectionMaterial">
+      <div class="filterSectionTitle">Materiaal</div>
+      <div class="filterSectionGrid">
+        <div class="field searchFieldWrap">
+          <label>Zoeken</label>
+          <input id="filterSearch" list="materialDatalist" autocomplete="off" placeholder="Zoek materiaal of vrije tekst…">
+          <label class="exactMaterialToggle"><input type="checkbox" id="filterExactMaterial"><span>Alleen exact materiaal</span></label>
+        </div>
+        <div class="field"><label>Dikte</label><select id="filterThickness"><option value="">Alle</option></select></div>
+        <div class="field"><label>Bewerking</label><select id="filterOperation"><option value="">Alle</option></select></div>
+        <div class="field"><label>Vermogen</label><select id="filterPower"><option value="">Alle</option></select></div>
+        <div class="field"><label>Status</label><select id="filterStatus"><option value="">Alle</option><option>Wacht op goedkeuring</option><option>Getest</option><option>Startwaarde</option><option>Eigen instelling</option><option>Niet aanbevolen</option></select></div>
+        <div class="field"><label>Betrouwbaarheid</label><select id="filterReliability"><option value="">Alle</option><option>Hoog</option><option>Gemiddeld</option><option>Experimenteel</option></select></div>
+      </div>
+    </section>
+
     <section class="filterSection filterSectionLaserData">
       <div class="filterSectionTitle">Lasergegevens</div>
       <div class="filterSectionGrid">
@@ -528,22 +544,6 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
           <datalist id="filterMachineModelDatalist"></datalist>
         </div>
 
-      </div>
-    </section>
-
-    <section class="filterSection filterSectionMaterial">
-      <div class="filterSectionTitle">Materiaal</div>
-      <div class="filterSectionGrid">
-        <div class="field searchFieldWrap">
-          <label>Zoeken</label>
-          <input id="filterSearch" list="materialDatalist" autocomplete="off" placeholder="Zoek materiaal of vrije tekst…">
-          <label class="exactMaterialToggle"><input type="checkbox" id="filterExactMaterial"><span>Alleen exact materiaal</span></label>
-        </div>
-        <div class="field"><label>Dikte</label><select id="filterThickness"><option value="">Alle</option></select></div>
-        <div class="field"><label>Bewerking</label><select id="filterOperation"><option value="">Alle</option></select></div>
-        <div class="field"><label>Vermogen</label><select id="filterPower"><option value="">Alle</option></select></div>
-        <div class="field"><label>Status</label><select id="filterStatus"><option value="">Alle</option><option>Wacht op goedkeuring</option><option>Getest</option><option>Startwaarde</option><option>Eigen instelling</option><option>Niet aanbevolen</option></select></div>
-        <div class="field"><label>Betrouwbaarheid</label><select id="filterReliability"><option value="">Alle</option><option>Hoog</option><option>Gemiddeld</option><option>Experimenteel</option></select></div>
       </div>
     </section>
 
@@ -748,7 +748,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='3.2.5-dev';
+const APP_VERSION='3.2.6-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
