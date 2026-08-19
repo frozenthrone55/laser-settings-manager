@@ -36,6 +36,19 @@
 @keyframes pulseDot{50%{opacity:.35}}
 .navbtn{position:relative}.navCount{margin-left:auto;min-width:20px;height:20px;border-radius:999px;padding:0 6px;display:inline-grid;place-items:center;background:#f79009;color:#fff;font-size:10px;font-weight:900}.navCount.hidden{display:none!important}
 .userStatsGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.userStatCard{border:1px solid var(--line);border-radius:13px;padding:13px;background:var(--surface2)}.userStatCard h3{margin:0 0 3px;font-size:14px}.userStatCard .statEmail{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.userStatNumbers{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}.userStatNumbers div{background:#fff;border:1px solid #e8edf4;border-radius:9px;padding:8px;text-align:center}.userStatNumbers strong{display:block;font-size:16px}.userStatNumbers span{font-size:9px;text-transform:uppercase;color:var(--muted);font-weight:800}
+.userStatsTableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.userStatsTable{width:100%;border-collapse:collapse;min-width:1080px}
+.userStatsTable th,.userStatsTable td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;vertical-align:middle}
+.userStatsTable th{background:#f7f9fc;padding:0}
+.userStatsTable tbody tr:last-child td{border-bottom:0}
+.userStatsTable tbody tr:hover{background:#fbfdff}
+.userStatsTable .numCell{text-align:right;font-variant-numeric:tabular-nums}
+.userStatsTable .userCell strong{display:block;font-size:12px}
+.userStatsTable .userCell span{display:block;margin-top:2px;font-size:10px;color:var(--muted)}
+.userStatsSort{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;padding:10px 12px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;text-align:left;white-space:nowrap;cursor:pointer}
+.userStatsSort:hover{background:#eef4ff;color:var(--blue)}
+.userStatsSort.active{color:var(--blue)}
+.userStatsSortMark{font-size:10px;line-height:1;opacity:.8}
 @media(max-width:1000px){.userStatsGrid{grid-template-columns:1fr 1fr}}@media(max-width:650px){.userStatsGrid{grid-template-columns:1fr}}
 .healthGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.healthItem{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface2)}.healthItem span{display:block;font-size:10px;text-transform:uppercase;font-weight:850;color:var(--muted);letter-spacing:.04em}.healthItem strong{display:block;margin-top:5px;font-size:14px}.historyFilters{display:grid;grid-template-columns:minmax(220px,1fr) 220px auto;gap:9px;margin-bottom:12px;align-items:center}.historyCount{font-size:11px;color:var(--muted);white-space:nowrap}.backupNote{margin-top:12px;padding:11px 13px;border-radius:11px;background:#f7f9fc;border:1px solid var(--line);font-size:11px;color:var(--muted)}@media(max-width:800px){.healthGrid{grid-template-columns:1fr 1fr}.historyFilters{grid-template-columns:1fr}}@media(max-width:520px){.healthGrid{grid-template-columns:1fr}}
 .approvalQueue{display:flex;flex-direction:column;gap:9px}.approvalItem{display:flex;gap:12px;align-items:center;border:1px solid #edf0f5;border-radius:12px;padding:11px 12px}.approvalMain{min-width:0;flex:1}.approvalMain strong{display:block}.approvalMain span{display:block;font-size:11px;color:var(--muted)}.clerkOrgWrap{min-height:420px}.clerkInfo{display:grid;grid-template-columns:1fr 1fr;gap:12px}.clerkInfo .settingRow{border:1px solid var(--line);border-radius:12px;padding:12px}.clerkSetupActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -487,7 +500,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
   <option value="de">DE</option>
 </select></div><div id="syncStatus" class="syncBadge offline" title="Status centrale database"><span class="syncDot"></span><span class="syncText">Database controleren…</span></div><div id="clerkUserButton"></div></header>
 <main class="content">
-<section class="view active" id="view-dashboard"><div class="viewHead"><div><h1>Dashboard</h1><p>Overzicht van instellingen voor 10 W, 20 W, 40 W en 70 W diodelasers, praktijkdata en recente wijzigingen.</p></div><div class="toolbar"><button class="btn primary editorAction" id="dashNew">+ Nieuwe instelling</button><button class="btn secondary" id="dashTest">Nieuwe materiaaltest</button></div></div><div class="grid4" id="metrics"><div class="metric"><div class="metricTop"><span>Instellingen</span></div><div class="metricValue">9.720</div><div class="metricHint">Actuele database</div></div><div class="metric"><div class="metricTop"><span>Materialen</span></div><div class="metricValue">54</div><div class="metricHint">Unieke materiaalsoorten</div></div><div class="metric"><div class="metricTop"><span>Getest door mij</span></div><div class="metricValue">0</div><div class="metricHint">Door jou fysiek bevestigd</div></div><div class="metric"><div class="metricTop"><span>Favorieten</span></div><div class="metricValue">0</div><div class="metricHint">Snel toegankelijk</div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Snel aan de slag</h2><p>Veelgebruikte acties</p></div></div><div class="quickGrid"><button class="quick" data-quick="search"><strong>Instelling zoeken</strong><span>Filter op materiaal, dikte en bewerking</span></button><button class="quick" data-quick="test"><strong>Materiaaltest maken</strong><span>Genereer een veilige testmatrix</span></button><button class="quick" data-quick="favorites"><strong>Favorieten openen</strong><span>Je meest gebruikte instellingen</span></button><button class="quick adminAction" data-quick="backup"><strong>Back-up maken</strong><span>Bewaar data en metadata als JSON</span></button></div></div><div class="card"><div class="cardHead"><div><h2>Recent gewijzigd</h2><p>Laatste acties in deze installatie</p></div><button class="btn ghost sm adminAction" data-viewjump="admin">Alles bekijken</button></div><div class="recentList" id="recentHistory"><div class="empty" style="padding:20px">Nog geen wijzigingen.</div></div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Favorieten</h2><p>Snel naar je vaste instellingen</p></div><button class="btn ghost sm" data-viewjump="favorites">Open favorieten</button></div><div class="recentList" id="dashboardFavorites"><div class="empty" style="padding:20px">Nog geen favorieten.</div></div></div><div class="card"><div class="cardHead"><div><h2>Datakwaliteit</h2><p>Startwaarden versus bevestigde praktijkdata</p></div></div><div id="qualitySummary"><div class="settingRow"><div><strong>Getest</strong><span>Eigen praktijkbevestiging</span></div><span class="pill green">0</span></div><div class="settingRow"><div><strong>Startwaarde</strong><span>Nog te valideren op jouw machine</span></div><span class="pill amber">5.963</span></div><div class="settingRow"><div><strong>Eigen instellingen</strong><span>Zelf toegevoegd, nog niet getest</span></div><span class="pill purple">0</span></div><div class="settingRow"><div><strong>Niet aanbevolen</strong><span>Onbetrouwbare snijcombinaties</span></div><span class="pill red">3.757</span></div></div></div></div><div class="card adminOnly" style="margin-top:16px"><div class="cardHead"><div><h2>Activiteit per gebruiker</h2><p>Centrale bijdragen, goedkeuringen en wijzigingen.</p></div><button class="btn ghost sm" data-viewjump="users">Gebruikers beheren</button></div><div class="userStatsGrid" id="dashboardUserStats"><div class="empty">Gebruikersstatistieken worden geladen…</div></div></div></section>
+<section class="view active" id="view-dashboard"><div class="viewHead"><div><h1>Dashboard</h1><p>Overzicht van instellingen voor 10 W, 20 W, 40 W en 70 W diodelasers, praktijkdata en recente wijzigingen.</p></div><div class="toolbar"><button class="btn primary editorAction" id="dashNew">+ Nieuwe instelling</button><button class="btn secondary" id="dashTest">Nieuwe materiaaltest</button></div></div><div class="grid4" id="metrics"><div class="metric"><div class="metricTop"><span>Instellingen</span></div><div class="metricValue">9.720</div><div class="metricHint">Actuele database</div></div><div class="metric"><div class="metricTop"><span>Materialen</span></div><div class="metricValue">54</div><div class="metricHint">Unieke materiaalsoorten</div></div><div class="metric"><div class="metricTop"><span>Getest door mij</span></div><div class="metricValue">0</div><div class="metricHint">Door jou fysiek bevestigd</div></div><div class="metric"><div class="metricTop"><span>Favorieten</span></div><div class="metricValue">0</div><div class="metricHint">Snel toegankelijk</div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Snel aan de slag</h2><p>Veelgebruikte acties</p></div></div><div class="quickGrid"><button class="quick" data-quick="search"><strong>Instelling zoeken</strong><span>Filter op materiaal, dikte en bewerking</span></button><button class="quick" data-quick="test"><strong>Materiaaltest maken</strong><span>Genereer een veilige testmatrix</span></button><button class="quick" data-quick="favorites"><strong>Favorieten openen</strong><span>Je meest gebruikte instellingen</span></button><button class="quick adminAction" data-quick="backup"><strong>Back-up maken</strong><span>Bewaar data en metadata als JSON</span></button></div></div><div class="card"><div class="cardHead"><div><h2>Recent gewijzigd</h2><p>Laatste acties in deze installatie</p></div><button class="btn ghost sm adminAction" data-viewjump="admin">Alles bekijken</button></div><div class="recentList" id="recentHistory"><div class="empty" style="padding:20px">Nog geen wijzigingen.</div></div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Favorieten</h2><p>Snel naar je vaste instellingen</p></div><button class="btn ghost sm" data-viewjump="favorites">Open favorieten</button></div><div class="recentList" id="dashboardFavorites"><div class="empty" style="padding:20px">Nog geen favorieten.</div></div></div><div class="card"><div class="cardHead"><div><h2>Datakwaliteit</h2><p>Startwaarden versus bevestigde praktijkdata</p></div></div><div id="qualitySummary"><div class="settingRow"><div><strong>Getest</strong><span>Eigen praktijkbevestiging</span></div><span class="pill green">0</span></div><div class="settingRow"><div><strong>Startwaarde</strong><span>Nog te valideren op jouw machine</span></div><span class="pill amber">5.963</span></div><div class="settingRow"><div><strong>Eigen instellingen</strong><span>Zelf toegevoegd, nog niet getest</span></div><span class="pill purple">0</span></div><div class="settingRow"><div><strong>Niet aanbevolen</strong><span>Onbetrouwbare snijcombinaties</span></div><span class="pill red">3.757</span></div></div></div></div><div class="card adminOnly" style="margin-top:16px"><div class="cardHead"><div><h2>Activiteit per gebruiker</h2><p>Centrale bijdragen, goedkeuringen en wijzigingen.</p></div><button class="btn ghost sm" data-viewjump="users">Gebruikers beheren</button></div><div class="userStatsTableWrap" id="dashboardUserStats"><div class="empty">Gebruikersstatistieken worden geladen…</div></div></div></section>
 
 <section class="view" id="view-settings"><div class="viewHead"><div><h1>Instellingen</h1><p>Zoek, vergelijk, test en beheer alle snij- en graveerwaarden.</p></div><div class="toolbar"><button class="btn primary editorAction" id="newRowBtn">+ Nieuwe instelling</button><button class="btn secondary" id="exportCsvBtn">CSV</button><button class="btn secondary adminAction" id="backupBtn">Back-up</button><button class="btn secondary adminAction" id="importBtn">Importeren</button><input type="file" id="importFile" accept="application/json" class="hidden"></div></div>
 <div class="filterCard">
@@ -735,7 +748,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='3.2.3-dev';
+const APP_VERSION='3.2.4-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -1035,6 +1048,26 @@ const I18N_OWN_EDIT_SUPPLEMENT={
   }
 };
 for(const lang of ['en','fr','de'])Object.assign(I18N_TRANSLATIONS[lang],I18N_OWN_EDIT_SUPPLEMENT[lang]);
+
+const I18N_USER_STATS_TABLE_SUPPLEMENT={
+  en:{
+    "Gebruiker":"User","Actief":"Active","Goedgekeurd":"Approved","Wachtend":"Pending",
+    "Wijzigingen":"Edits","Goedkeuringen":"Approvals","Afwijzingen":"Rejections",
+    "Laatste activiteit":"Last activity","Sorteer op":"Sort by"
+  },
+  fr:{
+    "Gebruiker":"Utilisateur","Actief":"Actif","Goedgekeurd":"Approuvé","Wachtend":"En attente",
+    "Wijzigingen":"Modifications","Goedkeuringen":"Approbations","Afwijzingen":"Rejets",
+    "Laatste activiteit":"Dernière activité","Sorteer op":"Trier par"
+  },
+  de:{
+    "Gebruiker":"Benutzer","Actief":"Aktiv","Goedgekeurd":"Freigegeben","Wachtend":"Ausstehend",
+    "Wijzigingen":"Änderungen","Goedkeuringen":"Freigaben","Afwijzingen":"Ablehnungen",
+    "Laatste activiteit":"Letzte Aktivität","Sorteer op":"Sortieren nach"
+  }
+};
+for(const lang of ['en','fr','de'])Object.assign(I18N_TRANSLATIONS[lang],I18N_USER_STATS_TABLE_SUPPLEMENT[lang]);
+
 
 
 
@@ -2106,6 +2139,7 @@ function seedUsers(){return [{id:'usr-admin',username:'Admin',email:'',role:'adm
 function defaultState(){return {patch:{upserts:[],deleted:[]},favorites:[],history:[],users:seedUsers(),settings:{accessControl:false},recent:[],materialProfiles:{},customCategories:{},materialRenames:{},laserProfiles:[...BASE_LASER_PROFILES]};}
 function mergePortable(){const d=defaultState();return {...d,...PORTABLE_STATE,patch:PORTABLE_STATE.patch||d.patch,settings:{...d.settings,...(PORTABLE_STATE.settings||{})},users:Array.isArray(PORTABLE_STATE.users)&&PORTABLE_STATE.users.length?PORTABLE_STATE.users:d.users,materialProfiles:{...(d.materialProfiles||{}),...(PORTABLE_STATE.materialProfiles||{})},customCategories:{...(d.customCategories||{}),...(PORTABLE_STATE.customCategories||{})},materialRenames:{...(d.materialRenames||{}),...(PORTABLE_STATE.materialRenames||{})},laserProfiles:Array.isArray(PORTABLE_STATE.laserProfiles)&&PORTABLE_STATE.laserProfiles.length?PORTABLE_STATE.laserProfiles:d.laserProfiles};}
 function loadState(){try{const s=JSON.parse(localStorage.getItem(STATE_KEY));if(s&&typeof s==='object')return {...mergePortable(),...s,settings:{...mergePortable().settings,...(s.settings||{})}}}catch(e){}return mergePortable();}
+let dashboardUserSort={key:'name',dir:'asc'};
 let state=loadState();LASER_PROFILES=[...new Set([...BASE_LASER_PROFILES,...((state.laserProfiles||[]).map(Number).filter(v=>Number.isFinite(v)&&v>0))])].sort((a,b)=>a-b);let rows=[];let currentUser={id:'usr-admin',username:'Admin',role:'admin'};let currentPage=1;let editingId=null;let selectedTest=null;let confirmAction=null;let editingUserId=null;
 const SEARCH_MATERIAL_CACHE=new Map();
 const SEARCH_ROW_CACHE=new Map();
@@ -2223,7 +2257,80 @@ function notifyCentralChanges(oldPatch,nextPatch,newPendingCount){
     }
   }
 }
-function renderUserStats(){const render=node=>{if(!node)return;node.innerHTML=centralUserStats.length?centralUserStats.map(s=>`<div class="userStatCard"><h3>${esc(s.name)}</h3><div class="statEmail">${esc(s.email||'—')}</div><div style="margin-top:7px"><span class="pill ${s.role==='admin'?'purple':'blue'}">${esc(tr(ROLE_NAMES[s.role]||s.role))}</span></div><div class="userStatNumbers"><div><strong>${Number(s.activeAdded)||0}</strong><span>Actief</span></div><div><strong>${Number(s.approved)||0}</strong><span>Goedgekeurd</span></div><div><strong>${Number(s.pending)||0}</strong><span>Wachtend</span></div><div><strong>${Number(s.edits)||0}</strong><span>Wijzigingen</span></div><div><strong>${Number(s.approvals)||0}</strong><span>Goedkeuringen</span></div><div><strong>${Number(s.rejections)||0}</strong><span>Afwijzingen</span></div></div><div style="font-size:10px;color:var(--muted);margin-top:8px">Laatste activiteit: ${s.lastActivityAt?fmtDate(s.lastActivityAt):'—'}</div></div>`).join(''):'<div class="empty">Nog geen gebruikersactiviteit.</div>'};render($('dashboardUserStats'));render($('userStatsGrid'))}
+function dashboardUserStatValue(s,key){
+  if(key==='name')return txt(s.name||s.email);
+  if(key==='role')return tr(ROLE_NAMES[s.role]||s.role);
+  if(key==='lastActivityAt')return s.lastActivityAt?Date.parse(s.lastActivityAt)||0:0;
+  return Number(s[key])||0;
+}
+function setDashboardUserSort(key){
+  if(dashboardUserSort.key===key){
+    dashboardUserSort.dir=dashboardUserSort.dir==='asc'?'desc':'asc';
+  }else{
+    dashboardUserSort={key,dir:['name','role'].includes(key)?'asc':'desc'};
+  }
+  renderUserStats();
+}
+function dashboardUserSortButton(key,label){
+  const active=dashboardUserSort.key===key;
+  const mark=active?(dashboardUserSort.dir==='asc'?'▲':'▼'):'↕';
+  return `<button class="userStatsSort${active?' active':''}" onclick="setDashboardUserSort('${key}')" aria-label="${esc(tr('Sorteer op'))} ${esc(tr(label))}"><span>${esc(tr(label))}</span><span class="userStatsSortMark">${mark}</span></button>`;
+}
+function renderDashboardUserStats(){
+  const node=$('dashboardUserStats');
+  if(!node)return;
+  if(!centralUserStats.length){
+    node.innerHTML=`<div class="empty">${esc(tr('Nog geen gebruikersactiviteit.'))}</div>`;
+    return;
+  }
+
+  const list=centralUserStats.slice().sort((a,b)=>{
+    const key=dashboardUserSort.key;
+    const av=dashboardUserStatValue(a,key);
+    const bv=dashboardUserStatValue(b,key);
+    let cmp=0;
+    if(typeof av==='number'&&typeof bv==='number'){
+      cmp=av-bv;
+    }else{
+      cmp=txt(av).localeCompare(txt(bv),currentLocale(),{sensitivity:'base',numeric:true});
+    }
+    if(cmp===0){
+      cmp=txt(a.name||a.email).localeCompare(txt(b.name||b.email),currentLocale(),{sensitivity:'base'});
+    }
+    return dashboardUserSort.dir==='asc'?cmp:-cmp;
+  });
+
+  node.innerHTML=`<table class="userStatsTable">
+    <thead><tr>
+      <th>${dashboardUserSortButton('name','Gebruiker')}</th>
+      <th>${dashboardUserSortButton('role','Rol')}</th>
+      <th>${dashboardUserSortButton('activeAdded','Actief')}</th>
+      <th>${dashboardUserSortButton('approved','Goedgekeurd')}</th>
+      <th>${dashboardUserSortButton('pending','Wachtend')}</th>
+      <th>${dashboardUserSortButton('edits','Wijzigingen')}</th>
+      <th>${dashboardUserSortButton('approvals','Goedkeuringen')}</th>
+      <th>${dashboardUserSortButton('rejections','Afwijzingen')}</th>
+      <th>${dashboardUserSortButton('lastActivityAt','Laatste activiteit')}</th>
+    </tr></thead>
+    <tbody>${list.map(s=>`<tr>
+      <td class="userCell"><strong>${esc(s.name||s.email||'—')}</strong><span>${esc(s.email||'—')}</span></td>
+      <td><span class="pill ${s.role==='admin'?'purple':'blue'}">${esc(tr(ROLE_NAMES[s.role]||s.role))}</span></td>
+      <td class="numCell">${Number(s.activeAdded)||0}</td>
+      <td class="numCell">${Number(s.approved)||0}</td>
+      <td class="numCell">${Number(s.pending)||0}</td>
+      <td class="numCell">${Number(s.edits)||0}</td>
+      <td class="numCell">${Number(s.approvals)||0}</td>
+      <td class="numCell">${Number(s.rejections)||0}</td>
+      <td>${s.lastActivityAt?fmtDate(s.lastActivityAt):'—'}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+function renderUserStats(){
+  renderDashboardUserStats();
+  const node=$('userStatsGrid');
+  if(!node)return;
+  node.innerHTML=centralUserStats.length?centralUserStats.map(s=>`<div class="userStatCard"><h3>${esc(s.name)}</h3><div class="statEmail">${esc(s.email||'—')}</div><div style="margin-top:7px"><span class="pill ${s.role==='admin'?'purple':'blue'}">${esc(tr(ROLE_NAMES[s.role]||s.role))}</span></div><div class="userStatNumbers"><div><strong>${Number(s.activeAdded)||0}</strong><span>${esc(tr('Actief'))}</span></div><div><strong>${Number(s.approved)||0}</strong><span>${esc(tr('Goedgekeurd'))}</span></div><div><strong>${Number(s.pending)||0}</strong><span>${esc(tr('Wachtend'))}</span></div><div><strong>${Number(s.edits)||0}</strong><span>${esc(tr('Wijzigingen'))}</span></div><div><strong>${Number(s.approvals)||0}</strong><span>${esc(tr('Goedkeuringen'))}</span></div><div><strong>${Number(s.rejections)||0}</strong><span>${esc(tr('Afwijzingen'))}</span></div></div><div style="font-size:10px;color:var(--muted);margin-top:8px">${esc(tr('Laatste activiteit'))}: ${s.lastActivityAt?fmtDate(s.lastActivityAt):'—'}</div></div>`).join(''):`<div class="empty">${esc(tr('Nog geen gebruikersactiviteit.'))}</div>`;
+}
 function exportCentralHistoryCsv(){if(!can('admin')||!centralHistory.length)return toast('Geen centrale geschiedenis om te exporteren.','bad');const heads=['Datum','Type','Actie','Gebruiker','Gebruikers-ID','Rol','Instelling-ID','Herstelbaar'];const vals=centralHistory.map(h=>[h.at,localizedHistoryType(h.type),localizedHistoryLabel(h),h.user,h.userId,h.userRole||'',h.rowId||'',h.restorable?tr('Ja'):tr('Nee')]);const q=v=>'"'+txt(v).replaceAll('"','""')+'"';download('laser-settings-wijzigingsgeschiedenis.csv','text/csv;charset=utf-8','\ufeff'+[heads,...vals].map(a=>a.map(q).join(';')).join('\r\n'))}
 function centralBackupStamp(){return localStorage.getItem('lsm_last_central_backup')||''}
 function localDateStamp(date=new Date()){
