@@ -500,7 +500,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
   <option value="de">DE</option>
 </select></div><div id="syncStatus" class="syncBadge offline" title="Status centrale database"><span class="syncDot"></span><span class="syncText">Database controleren…</span></div><div id="clerkUserButton"></div></header>
 <main class="content">
-<section class="view active" id="view-dashboard"><div class="viewHead"><div><h1>Dashboard</h1><p>Overzicht van instellingen voor 10 W, 20 W, 40 W en 70 W diodelasers, praktijkdata en recente wijzigingen.</p></div><div class="toolbar"><button class="btn primary editorAction" id="dashNew">+ Nieuwe instelling</button><button class="btn secondary" id="dashTest">Nieuwe materiaaltest</button></div></div><div class="grid4" id="metrics"><div class="metric"><div class="metricTop"><span>Instellingen</span></div><div class="metricValue">9.720</div><div class="metricHint">Actuele database</div></div><div class="metric"><div class="metricTop"><span>Materialen</span></div><div class="metricValue">54</div><div class="metricHint">Unieke materiaalsoorten</div></div><div class="metric"><div class="metricTop"><span>Getest door mij</span></div><div class="metricValue">0</div><div class="metricHint">Door jou fysiek bevestigd</div></div><div class="metric"><div class="metricTop"><span>Favorieten</span></div><div class="metricValue">0</div><div class="metricHint">Snel toegankelijk</div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Snel aan de slag</h2><p>Veelgebruikte acties</p></div></div><div class="quickGrid"><button class="quick" data-quick="search"><strong>Instelling zoeken</strong><span>Filter op materiaal, dikte en bewerking</span></button><button class="quick" data-quick="test"><strong>Materiaaltest maken</strong><span>Genereer een veilige testmatrix</span></button><button class="quick" data-quick="favorites"><strong>Favorieten openen</strong><span>Je meest gebruikte instellingen</span></button><button class="quick adminAction" data-quick="backup"><strong>Back-up maken</strong><span>Bewaar data en metadata als JSON</span></button></div></div><div class="card"><div class="cardHead"><div><h2>Recent gewijzigd</h2><p>Laatste acties in deze installatie</p></div><button class="btn ghost sm adminAction" data-viewjump="admin">Alles bekijken</button></div><div class="recentList" id="recentHistory"><div class="empty" style="padding:20px">Nog geen wijzigingen.</div></div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Favorieten</h2><p>Snel naar je vaste instellingen</p></div><button class="btn ghost sm" data-viewjump="favorites">Open favorieten</button></div><div class="recentList" id="dashboardFavorites"><div class="empty" style="padding:20px">Nog geen favorieten.</div></div></div><div class="card"><div class="cardHead"><div><h2>Datakwaliteit</h2><p>Startwaarden versus bevestigde praktijkdata</p></div></div><div id="qualitySummary"><div class="settingRow"><div><strong>Getest</strong><span>Eigen praktijkbevestiging</span></div><span class="pill green">0</span></div><div class="settingRow"><div><strong>Startwaarde</strong><span>Nog te valideren op jouw machine</span></div><span class="pill amber">5.963</span></div><div class="settingRow"><div><strong>Eigen instellingen</strong><span>Zelf toegevoegd, nog niet getest</span></div><span class="pill purple">0</span></div><div class="settingRow"><div><strong>Niet aanbevolen</strong><span>Onbetrouwbare snijcombinaties</span></div><span class="pill red">3.757</span></div></div></div></div><div class="card adminOnly" style="margin-top:16px"><div class="cardHead"><div><h2>Activiteit per gebruiker</h2><p>Centrale bijdragen, goedkeuringen en wijzigingen.</p></div><button class="btn ghost sm" data-viewjump="users">Gebruikers beheren</button></div><div class="userStatsTableWrap" id="dashboardUserStats"><div class="empty">Gebruikersstatistieken worden geladen…</div></div></div></section>
+<section class="view active" id="view-dashboard"><div class="viewHead"><div><h1>Dashboard</h1><p id="dashboardOverviewText" data-i18n-skip="true"></p></div><div class="toolbar"><button class="btn primary editorAction" id="dashNew">+ Nieuwe instelling</button><button class="btn secondary" id="dashTest">Nieuwe materiaaltest</button></div></div><div class="grid4" id="metrics"><div class="metric"><div class="metricTop"><span>Instellingen</span></div><div class="metricValue">9.720</div><div class="metricHint">Actuele database</div></div><div class="metric"><div class="metricTop"><span>Materialen</span></div><div class="metricValue">54</div><div class="metricHint">Unieke materiaalsoorten</div></div><div class="metric"><div class="metricTop"><span>Getest door mij</span></div><div class="metricValue">0</div><div class="metricHint">Door jou fysiek bevestigd</div></div><div class="metric"><div class="metricTop"><span>Favorieten</span></div><div class="metricValue">0</div><div class="metricHint">Snel toegankelijk</div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Snel aan de slag</h2><p>Veelgebruikte acties</p></div></div><div class="quickGrid"><button class="quick" data-quick="search"><strong>Instelling zoeken</strong><span>Filter op materiaal, dikte en bewerking</span></button><button class="quick" data-quick="test"><strong>Materiaaltest maken</strong><span>Genereer een veilige testmatrix</span></button><button class="quick" data-quick="favorites"><strong>Favorieten openen</strong><span>Je meest gebruikte instellingen</span></button><button class="quick adminAction" data-quick="backup"><strong>Back-up maken</strong><span>Bewaar data en metadata als JSON</span></button></div></div><div class="card"><div class="cardHead"><div><h2>Recent gewijzigd</h2><p>Laatste acties in deze installatie</p></div><button class="btn ghost sm adminAction" data-viewjump="admin">Alles bekijken</button></div><div class="recentList" id="recentHistory"><div class="empty" style="padding:20px">Nog geen wijzigingen.</div></div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Favorieten</h2><p>Snel naar je vaste instellingen</p></div><button class="btn ghost sm" data-viewjump="favorites">Open favorieten</button></div><div class="recentList" id="dashboardFavorites"><div class="empty" style="padding:20px">Nog geen favorieten.</div></div></div><div class="card"><div class="cardHead"><div><h2>Datakwaliteit</h2><p>Startwaarden versus bevestigde praktijkdata</p></div></div><div id="qualitySummary"><div class="settingRow"><div><strong>Getest</strong><span>Eigen praktijkbevestiging</span></div><span class="pill green">0</span></div><div class="settingRow"><div><strong>Startwaarde</strong><span>Nog te valideren op jouw machine</span></div><span class="pill amber">5.963</span></div><div class="settingRow"><div><strong>Eigen instellingen</strong><span>Zelf toegevoegd, nog niet getest</span></div><span class="pill purple">0</span></div><div class="settingRow"><div><strong>Niet aanbevolen</strong><span>Onbetrouwbare snijcombinaties</span></div><span class="pill red">3.757</span></div></div></div></div><div class="card adminOnly" style="margin-top:16px"><div class="cardHead"><div><h2>Activiteit per gebruiker</h2><p>Centrale bijdragen, goedkeuringen en wijzigingen.</p></div><button class="btn ghost sm" data-viewjump="users">Gebruikers beheren</button></div><div class="userStatsTableWrap" id="dashboardUserStats"><div class="empty">Gebruikersstatistieken worden geladen…</div></div></div></section>
 
 <section class="view" id="view-settings"><div class="viewHead"><div><h1>Instellingen</h1><p>Zoek, vergelijk, test en beheer alle snij- en graveerwaarden.</p></div><div class="toolbar"><button class="btn primary editorAction" id="newRowBtn">+ Nieuwe instelling</button><button class="btn secondary" id="exportCsvBtn">CSV</button><button class="btn secondary adminAction" id="backupBtn">Back-up</button><button class="btn secondary adminAction" id="importBtn">Importeren</button><input type="file" id="importFile" accept="application/json" class="hidden"></div></div>
 <div class="filterCard">
@@ -748,7 +748,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='3.2.6-dev';
+const APP_VERSION='3.2.7-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
@@ -1273,11 +1273,52 @@ function refreshSearchLanguageValues(){
   translateExactMaterialSearchValue($('globalSearch'));
 }
 
+
+function activeLaserProfileLabels(){
+  return [...new Set(
+    (LASER_PROFILES||BASE_LASER_PROFILES||[])
+      .map(Number)
+      .filter(v=>Number.isFinite(v)&&v>0)
+  )]
+    .sort((a,b)=>a-b)
+    .map(w=>`${Number.isInteger(w)?w:Number(w.toFixed(1))} W`);
+}
+function localizedLaserProfileList(){
+  const labels=activeLaserProfileLabels();
+  if(!labels.length)return '';
+  try{
+    return new Intl.ListFormat(currentLocale(),{style:'long',type:'conjunction'}).format(labels);
+  }catch(e){
+    return labels.join(', ');
+  }
+}
+function dashboardOverviewCopy(){
+  const watts=localizedLaserProfileList();
+  if(currentLanguage==='en')return `Overview of settings for ${watts} diode lasers, real-world data and recent changes.`;
+  if(currentLanguage==='fr')return `Vue d’ensemble des réglages pour les lasers à diode de ${watts}, des données pratiques et des modifications récentes.`;
+  if(currentLanguage==='de')return `Übersicht der Einstellungen für ${watts} Diodenlaser, Praxisdaten und letzte Änderungen.`;
+  return `Overzicht van instellingen voor ${watts} diodelasers, praktijkdata en recente wijzigingen.`;
+}
+function dashboardCombinedWattHint(){
+  const watts=activeLaserProfileLabels().map(v=>v.replace(/\s*W$/,'')).join('/');
+  if(currentLanguage==='en')return `${watts} W combined`;
+  if(currentLanguage==='fr')return `${watts} W au total`;
+  if(currentLanguage==='de')return `${watts} W zusammen`;
+  return `${watts} W samen`;
+}
+function dynamicAppTitle(){
+  const watts=activeLaserProfileLabels().join(' · ');
+  if(currentLanguage==='en')return `Diode laser settings · ${watts}`;
+  if(currentLanguage==='fr')return `Réglages laser diode · ${watts}`;
+  if(currentLanguage==='de')return `Diodenlaser-Einstellungen · ${watts}`;
+  return `Instellingen diodelasers · ${watts}`;
+}
+
 function setLanguage(lang,{persist=true}={}){
   if(!I18N_LANGS.includes(lang))lang='nl';
   currentLanguage=lang;
   document.documentElement.lang=currentLanguage;
-  document.title=tr('Instellingen diodelasers · 10 W · 20 W · 40 W · 70 W');
+  document.title=dynamicAppTitle();
   if(persist)localStorage.setItem(I18N_STORAGE_KEY,lang);
   refreshSearchLanguageValues();
   translateDom(document.body);
@@ -1297,7 +1338,7 @@ function setLanguage(lang,{persist=true}={}){
 function initI18n(){
   currentLanguage=detectLanguage();
   document.documentElement.lang=currentLanguage;
-  document.title=tr('Instellingen diodelasers · 10 W · 20 W · 40 W · 70 W');
+  document.title=dynamicAppTitle();
   document.querySelectorAll('.langSelect').forEach(sel=>{
     sel.value=currentLanguage;
     sel.addEventListener('change',()=>setLanguage(sel.value));
@@ -3900,20 +3941,24 @@ function renderFavorites(){
 function renderDashboard(){
   if(!Array.isArray(state.favorites))state.favorites=[];
 
+  const overviewEl=$('dashboardOverviewText');
+  if(overviewEl)overviewEl.textContent=dashboardOverviewCopy();
+  document.title=dynamicAppTitle();
+
   const materials=unique('materiaal').length;
   const tested=rows.filter(isTestedByCurrentUser).length;
   const notRec=rows.filter(r=>statusOf(r)==='Niet aanbevolen').length;
   const favs=state.favorites.length;
 
   $('metrics').innerHTML=[
-    ['Instellingen',rows.length.toLocaleString(currentLocale()),'10/20/40/70 W samen'],
+    ['Instellingen',rows.length.toLocaleString(currentLocale()),dashboardCombinedWattHint(),true],
     ['Materialen',materials.toLocaleString(currentLocale()),'Acacia-master + materiaalfactoren'],
     ['Getest door mij',tested.toLocaleString(currentLocale()),'Door jou fysiek bevestigd'],
     ['Favorieten',favs.toLocaleString(currentLocale()),'Snel toegankelijk']
   ].map(x=>`<div class="metric">
     <div class="metricTop"><span>${esc(tr(x[0]))}</span></div>
     <div class="metricValue">${x[1]}</div>
-    <div class="metricHint">${esc(tr(x[2]))}</div>
+    <div class="metricHint">${esc(x[3]?x[2]:tr(x[2]))}</div>
   </div>`).join('');
 
   const hist=(centralMode?centralRecentHistory:(state.history||[])).slice(0,5);
