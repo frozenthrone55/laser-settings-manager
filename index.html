@@ -241,46 +241,79 @@ button,.btn,.navbtn,.mobileMenu{touch-action:manipulation}
 
 /* v2.2.0 · meertalige interface */
 .langSelect{
-  min-height:36px;
-  border:1px solid var(--line);
-  border-radius:10px;
+  min-height:44px;
+  border:1.5px solid #cbd5e1;
+  border-radius:12px;
   background:#fff;
   color:var(--text);
-  padding:7px 28px 7px 10px;
-  font-size:12px;
+  padding:9px 36px 9px 12px;
+  font-size:14px;
+  line-height:1.2;
   font-weight:800;
   outline:none;
+  cursor:pointer;
+  box-shadow:0 1px 2px #0f172a0a;
+  transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+.langSelect:hover{
+  border-color:#94a3b8;
+  background:#fbfdff;
 }
 .langSelect:focus{
-  border-color:#8cb5f0;
-  box-shadow:0 0 0 3px #2268d812;
+  border-color:#5b91df;
+  box-shadow:0 0 0 4px #2268d817;
 }
-.topLanguage{display:flex;align-items:center}
-.topLanguage .langSelect{min-width:68px}
+.topLanguage{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:3px 5px 3px 8px;
+  border:1px solid #e2e8f0;
+  border-radius:13px;
+  background:#f8fafc;
+}
+.languageGlobe{
+  font-size:18px;
+  line-height:1;
+  flex:0 0 auto;
+}
+.topLanguage .langSelect{min-width:154px}
 .loginLanguage{
   display:flex;
   justify-content:flex-end;
   align-items:center;
-  gap:8px;
-  margin:-6px -2px 12px;
+  gap:9px;
+  margin:-6px -2px 14px;
   color:var(--muted);
-  font-size:11px;
+  font-size:12px;
   font-weight:800;
 }
-.loginLanguage .langSelect{min-width:150px}
+.loginLanguage .langSelect{
+  min-width:180px;
+  min-height:46px;
+  font-size:14px;
+}
 html[lang="fr"] .topSearch{width:min(500px,43vw)}
 html[lang="de"] .topSearch{width:min(490px,42vw)}
+@media(max-width:1100px){
+  .topLanguage .langSelect{min-width:138px;font-size:13px}
+}
 @media(max-width:900px){
-  .topLanguage .langSelect{min-width:58px;padding-left:8px;padding-right:22px}
+  .topLanguage{gap:5px;padding-left:6px}
+  .languageGlobe{font-size:16px}
+  .topLanguage .langSelect{min-width:128px;padding-left:9px;padding-right:28px}
 }
 @media(max-width:720px){
   .topLanguage{margin-left:auto}
-  .topLanguage .langSelect{min-width:56px}
+  .topLanguage .langSelect{min-width:124px;min-height:42px;font-size:12px}
 }
 @media(max-width:480px){
   .loginLanguage{margin-top:-2px}
   .loginLanguage span{display:none}
-  .loginLanguage .langSelect{min-width:138px}
+  .loginLanguage .langSelect{min-width:160px;width:100%;max-width:190px}
+  .topLanguage{padding:2px 4px}
+  .languageGlobe{display:none}
+  .topLanguage .langSelect{min-width:116px;max-width:132px;padding-left:8px;padding-right:24px;font-size:11px}
 }
 
 
@@ -493,11 +526,11 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 </nav>
 <div class="sidebottom"><div class="userchip"><div class="avatar" id="sideAvatar">A</div><div class="usertext"><strong id="sideUser">Admin</strong><span id="sideRole">Beheerder</span></div></div><div class="sideactions"><button id="lockBtn">Vergrendel</button><button id="helpBtn">Help</button></div></div></aside>
 
-<div class="shell"><header class="topbar"><button class="mobileMenu" id="mobileMenu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button><div class="pageTitle" id="pageTitle">Dashboard</div><div class="topSearch"><svg id="globalSearchBtn" role="button" tabindex="0" aria-label="Zoeken" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="globalSearch" list="materialDatalist" autocomplete="off" placeholder="Zoek bv. ‘berk 6mm snijden 100%’"><span class="kbd">Ctrl K</span></div><div class="topLanguage"><select class="langSelect" id="topLanguageSelect" aria-label="Language">
-  <option value="nl">NL</option>
-  <option value="en">EN</option>
-  <option value="fr">FR</option>
-  <option value="de">DE</option>
+<div class="shell"><header class="topbar"><button class="mobileMenu" id="mobileMenu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button><div class="pageTitle" id="pageTitle">Dashboard</div><div class="topSearch"><svg id="globalSearchBtn" role="button" tabindex="0" aria-label="Zoeken" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="globalSearch" list="materialDatalist" autocomplete="off" placeholder="Zoek bv. ‘berk 6mm snijden 100%’"><span class="kbd">Ctrl K</span></div><div class="topLanguage"><span class="languageGlobe" aria-hidden="true">🌐</span><select class="langSelect" id="topLanguageSelect" aria-label="Language">
+  <option value="nl">NL · Nederlands</option>
+  <option value="en">EN · English</option>
+  <option value="fr">FR · Français</option>
+  <option value="de">DE · Deutsch</option>
 </select></div><div id="syncStatus" class="syncBadge offline" title="Status centrale database"><span class="syncDot"></span><span class="syncText">Database controleren…</span></div><div id="clerkUserButton"></div></header>
 <main class="content">
 <section class="view active" id="view-dashboard"><div class="viewHead"><div><h1>Dashboard</h1><p id="dashboardOverviewText" data-i18n-skip="true"></p></div><div class="toolbar"><button class="btn primary editorAction" id="dashNew">+ Nieuwe instelling</button><button class="btn secondary" id="dashTest">Nieuwe materiaaltest</button></div></div><div class="grid4" id="metrics"><div class="metric"><div class="metricTop"><span>Instellingen</span></div><div class="metricValue">9.720</div><div class="metricHint">Actuele database</div></div><div class="metric"><div class="metricTop"><span>Materialen</span></div><div class="metricValue">54</div><div class="metricHint">Unieke materiaalsoorten</div></div><div class="metric"><div class="metricTop"><span>Getest door mij</span></div><div class="metricValue">0</div><div class="metricHint">Door jou fysiek bevestigd</div></div><div class="metric"><div class="metricTop"><span>Favorieten</span></div><div class="metricValue">0</div><div class="metricHint">Snel toegankelijk</div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Snel aan de slag</h2><p>Veelgebruikte acties</p></div></div><div class="quickGrid"><button class="quick" data-quick="search"><strong>Instelling zoeken</strong><span>Filter op materiaal, dikte en bewerking</span></button><button class="quick" data-quick="test"><strong>Materiaaltest maken</strong><span>Genereer een veilige testmatrix</span></button><button class="quick" data-quick="favorites"><strong>Favorieten openen</strong><span>Je meest gebruikte instellingen</span></button><button class="quick adminAction" data-quick="backup"><strong>Back-up maken</strong><span>Bewaar data en metadata als JSON</span></button></div></div><div class="card"><div class="cardHead"><div><h2>Recent gewijzigd</h2><p>Laatste acties in deze installatie</p></div><button class="btn ghost sm adminAction" data-viewjump="admin">Alles bekijken</button></div><div class="recentList" id="recentHistory"><div class="empty" style="padding:20px">Nog geen wijzigingen.</div></div></div></div><div class="dashboardGrid"><div class="card"><div class="cardHead"><div><h2>Favorieten</h2><p>Snel naar je vaste instellingen</p></div><button class="btn ghost sm" data-viewjump="favorites">Open favorieten</button></div><div class="recentList" id="dashboardFavorites"><div class="empty" style="padding:20px">Nog geen favorieten.</div></div></div><div class="card"><div class="cardHead"><div><h2>Datakwaliteit</h2><p>Startwaarden versus bevestigde praktijkdata</p></div></div><div id="qualitySummary"><div class="settingRow"><div><strong>Getest</strong><span>Eigen praktijkbevestiging</span></div><span class="pill green">0</span></div><div class="settingRow"><div><strong>Startwaarde</strong><span>Nog te valideren op jouw machine</span></div><span class="pill amber">5.963</span></div><div class="settingRow"><div><strong>Eigen instellingen</strong><span>Zelf toegevoegd, nog niet getest</span></div><span class="pill purple">0</span></div><div class="settingRow"><div><strong>Niet aanbevolen</strong><span>Onbetrouwbare snijcombinaties</span></div><span class="pill red">3.757</span></div></div></div></div><div class="card adminOnly" style="margin-top:16px"><div class="cardHead"><div><h2>Activiteit per gebruiker</h2><p>Centrale bijdragen, goedkeuringen en wijzigingen.</p></div><button class="btn ghost sm" data-viewjump="users">Gebruikers beheren</button></div><div class="userStatsTableWrap" id="dashboardUserStats"><div class="empty">Gebruikersstatistieken worden geladen…</div></div></div></section>
@@ -748,7 +781,7 @@ html[lang="de"] .topSearch{width:min(490px,42vw)}
 
 <script>
 'use strict';
-const APP_VERSION='3.2.8-dev';
+const APP_VERSION='3.2.9-dev';
 const INSTANCE_ID=document.querySelector('meta[name="app-instance"]').content;
 const STATE_KEY='laser-settings-manager-state-'+INSTANCE_ID;
 const BASE_ROWS=JSON.parse(document.getElementById('seed-data').textContent);
